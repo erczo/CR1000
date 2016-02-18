@@ -1,0 +1,218 @@
+'CR1000
+'Eel River Critical Zone Observatory
+'University of California, Berkeley
+'Melange Weather Station (WSSR) on the Sagehorn-Russell Ranch
+'
+'Sensors
+'HMP60-L9 (RH% and Temp °C)
+'CS106 (Barometric pressure in mbars)
+'TB4-L25 (Rain gauge mm)
+'LI200X-L11 (Pyranometer kJ/m^2)
+'LI90SB-L11 (Quantum W/m^2)
+'05103-L14 (Wind speed m/s and direction)
+'LWS-L10 (Leaf wetness sensor)
+'CS451 (Well pressure transducers)
+'
+'Author: Chris Wong, UC Berkeley (Short Cut 2.8)
+'Date: May 12, 2015
+'
+'Make sure measurement method for PAR, RAD and LWS are correct!
+'
+'Added three CS450 pressure transducers to measure wells 500, 501 and 502.
+'Serial No. 14010857
+'Serial No. 14010863
+'Serial No. 29010272
+'Author: Chris Wong, UC Berkeley
+'Date: February 18, 2016
+'
+'~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
+'
+'Declare Variables and Units
+Public WSSR_BattV
+Public WSSR_PTemp_C
+Public WSSR_AirTC
+Public WSSR_RH
+Public WSSR_BP_mbar
+Public WSSR_Rain_mm
+Public WSSR_SlrW
+Public WSSR_SlrkJ
+Public WSSR_PAR_Den
+Public WSSR_PAR_Tot
+Public WSSR_WS_ms
+Public WSSR_WindDir
+Public WSSR_LWmV
+Public WSSR_LWMDry
+Public WSSR_LWMCon
+Public WSSR_LWMWet
+Public WSSR_CS450(2)
+Public WSSR_CS450_2(2)
+Public WSSR_CS450_3(2)
+
+Public WSSR_Lvl_m
+Public WSSR_Lvl_m_2
+Public WSSR_Lvl_m_3
+
+Alias WSSR_CS450(1)=WSSR_Lvl_psi
+Alias WSSR_CS450(2)=WSSR_Temp_C
+Alias WSSR_CS450_2(1)=WSSR_Lvl_psi_2
+Alias WSSR_CS450_2(2)=WSSR_Temp_C_2
+Alias WSSR_CS450_3(1)=WSSR_Lvl_psi_3
+Alias WSSR_CS450_3(2)=WSSR_Temp_C_3
+
+Units WSSR_BattV=Volts
+Units WSSR_PTemp_C=Deg C
+Units WSSR_AirTC=Deg C
+Units WSSR_RH=%
+Units WSSR_BP_mbar=mbar
+Units WSSR_Rain_mm=mm
+Units WSSR_SlrW=W/m^2
+Units WSSR_SlrkJ=kJ/m^2
+Units WSSR_PAR_Den=umol/s/m^2
+Units WSSR_PAR_Tot=mmol/m^2
+Units WSSR_WS_ms=meters/second
+Units WSSR_WindDir=Degrees
+Units WSSR_LWmV=mV
+Units WSSR_LWMDry=Minutes
+Units WSSR_LWMCon=Minutes
+Units WSSR_LWMWet=Minutes
+Units WSSR_Lvl_m=meters
+Units WSSR_Lvl_psi=psi
+Units WSSR_Temp_C=deg C
+Units WSSR_Lvl_m_2=meters
+Units WSSR_Lvl_psi_2=psi
+Units WSSR_Temp_C_2=deg C
+Units WSSR_Lvl_m_3=meters
+Units WSSR_Lvl_psi_3=psi
+Units WSSR_Temp_C_3=deg C
+
+'Define Data Tables
+DataTable(Table1,True,-1)
+	CardOut (0 ,-1)
+	Sample(1,WSSR_BattV,FP2)
+	FieldNames("WSSR_BattV")
+	Sample(1,WSSR_PTemp_C,FP2)
+	FieldNames("WSSR_PTemp_C")
+	Average(1,WSSR_AirTC,FP2,False)
+	FieldNames("WSSR_AirTC_AVG")
+	Sample(1,WSSR_RH,FP2)
+	FieldNames("WSSR_RH")
+	Sample(1,WSSR_BP_mbar,FP2)
+	FieldNames("WSSR_BP_mbar")
+	Totalize(1,WSSR_Rain_mm,FP2,False)
+	FieldNames("WSSR_Rain_mm_TOT")
+	Average(1,WSSR_SlrW,FP2,False)
+	FieldNames("WSSR_SlrW_AVG")
+	Totalize(1,WSSR_SlrkJ,IEEE4,False)
+	FieldNames("WSSR_SlrkJ_TOT")
+	Average(1,WSSR_PAR_Den,FP2,False)
+	FieldNames("WSSR_PAR_Den_AVG")
+	Totalize(1,WSSR_PAR_Tot,IEEE4,False)
+	FieldNames("WSSR_PAR_Tot_TOT")
+	Average(1,WSSR_WS_ms,FP2,False)
+	FieldNames("WSSR_WS_ms_AVG")
+	Maximum(1,WSSR_WS_ms,FP2,False,False)
+	FieldNames("WSSR_WS_ms_MAX")
+	Sample(1,WSSR_WindDir,FP2)
+	FieldNames("WSSR_WindDir")
+	Sample(1,WSSR_LWmV,FP2)
+	FieldNames("WSSR_LWmV")
+	Totalize(1,WSSR_LWMDry,FP2,False)
+	FieldNames("WSSR_LWMDry_TOT")
+	Totalize(1,WSSR_LWMCon,FP2,False)
+	FieldNames("WSSR_LWMCon_TOT")
+	Totalize(1,WSSR_LWMWet,FP2,False)
+	FieldNames("WSSR_LWMWet_TOT")
+	Sample(1,WSSR_Lvl_psi,FP2)
+	FieldNames("WSSR_Lvl_psi")
+	Sample(1,WSSR_Temp_C,FP2)
+	FieldNames("WSSR_Temp_C")
+	Sample (1,WSSR_Lvl_m,FP2)
+	FieldNames("WSSR_Lvl_m")
+	Sample(1,WSSR_Lvl_psi_2,FP2)
+	FieldNames("WSSR_Lvl_psi_2")
+	Sample(1,WSSR_Temp_C_2,FP2)
+	FieldNames("WSSR_Temp_C_2")
+	Sample (1,WSSR_Lvl_m_2,FP2)
+	FieldNames("WSSR_Lvl_m_2")
+	Sample(1,WSSR_Lvl_psi_3,FP2)
+	FieldNames("WSSR_Lvl_psi_3")
+	Sample(1,WSSR_Temp_C_3,FP2)
+	FieldNames("WSSR_Temp_C_3")
+	Sample (1,WSSR_Lvl_m_3,FP2)
+	FieldNames("WSSR_Lvl_m_3")
+EndTable
+
+'Main Program
+BeginProg
+	Scan(5,Min,1,0)
+		'Default Datalogger Battery Voltage measurement WSSR_BattV
+		Battery(WSSR_BattV)
+		'
+		'Wiring Panel Temperature measurement WSSR_PTemp_C
+		PanelTemp(WSSR_PTemp_C,_60Hz)
+		'
+		'HMP50 Temperature & Relative Humidity Sensor measurements WSSR_AirTC and WSSR_RH
+		VoltSe(WSSR_AirTC,1,mV2500,1,0,0,_60Hz,0.1,-40)
+		VoltSe(WSSR_RH,1,mV2500,2,0,0,_60Hz,0.1,0)
+		If (WSSR_RH>100) AND (WSSR_RH<108) Then WSSR_RH=100
+		'
+		'CS106 Barometric Pressure Sensor measurement WSSR_BP_mbar
+		If IfTime(55,60,Min) Then PortSet(1,1)
+		If IfTime(0,60,Min) Then
+			VoltSe(WSSR_BP_mbar,1,mV2500,3,1,0,_60Hz,0.240,500)
+			PortSet(1,0)
+		EndIf
+		'
+		'TB4/TB4MM Rain Gauge measurement WSSR_Rain_mm
+		PulseCount(WSSR_Rain_mm,1,1,2,0,0.2,0)
+		'
+		'LI200X Pyranometer measurements WSSR_SlrkJ and WSSR_SlrW
+		VoltDiff(WSSR_SlrW,1,mV7_5,3,True,0,_60Hz,1,0)
+		If WSSR_SlrW<0 Then WSSR_SlrW=0
+		WSSR_SlrkJ=WSSR_SlrW*60
+		WSSR_SlrW=WSSR_SlrW*200
+		'
+		'LI190SB Quantum Sensor measurements WSSR_PAR_Tot and WSSR_PAR_Den
+		VoltDiff(WSSR_PAR_Den,1,mV25,4,True,0,_60Hz,1,0)
+		If WSSR_PAR_Den<0 Then WSSR_PAR_Den=0
+		WSSR_PAR_Tot=WSSR_PAR_Den*74.91534
+		WSSR_PAR_Den=WSSR_PAR_Den*249.7178
+		'
+		'05103 Wind Speed & Direction Sensor measurements WSSR_WS_ms and WSSR_WindDir
+		PulseCount(WSSR_WS_ms,1,2,1,1,0.098,0)
+		BrHalf(WSSR_WindDir,1,mV2500,4,1,1,2500,True,0,_60Hz,355,0)
+		If WSSR_WindDir>=360 Then WSSR_WindDir=0
+		'
+		'LWS Dielectric Leaf Wetness Sensor measurement WSSR_LWmV
+		BrHalf(WSSR_LWmV,1,mV2500,9,1,1,2500,False,10000,_60Hz,2500,0)
+		'
+		'Determine Minutes Dry (WSSR_LWMDry), Minutes Wet or Contaminated (WSSR_LWMCon), and Minutes Wet (WSSR_LWMWet) for this Scan
+		WSSR_LWMDry=0
+		WSSR_LWMCon=0
+		WSSR_LWMWet=0
+		If WSSR_LWmV<274 Then
+			WSSR_LWMDry=5
+		Else
+			If WSSR_LWmV>=284 Then
+				WSSR_LWMWet=5
+			Else
+				WSSR_LWMCon=5
+			EndIf
+		EndIf
+		'
+		'CS450/CS455 Pressure Transducer measurements 'WSSR_Lvl_psi' and 'WSSR_Temp_C'
+		SDI12Recorder(WSSR_Lvl_psi,7,"0","M1!",1,0)
+		WSSR_Lvl_m=WSSR_Lvl_psi*0.70307
+		'
+		'CS450/CS455 Pressure Transducer measurements 'WSSR_Lvl_psi_2' and 'WSSR_Temp_C_2'
+		SDI12Recorder(WSSR_Lvl_psi_2,7,"1","M1!",1,0)
+		WSSR_Lvl_m_2=WSSR_Lvl_psi_2*0.70307
+		'
+		'CS450/CS455 Pressure Transducer measurements 'WSSR_Lvl_psi_3' and 'WSSR_Temp_C_3'
+		SDI12Recorder(WSSR_Lvl_psi_3,7,"2","M1!",1,0)
+		WSSR_Lvl_m_3=WSSR_Lvl_psi_3*0.70307
+		'
+		'Call Data Tables and Store Data
+		CallTable(Table1)
+	NextScan
+EndProg
