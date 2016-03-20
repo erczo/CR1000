@@ -5,7 +5,7 @@ NOTE: some filenames in the code are suffixed with the date last changed and wil
 
 ANGELO CWS.CR1		Cahto Peak Weather Station (WSCP)  
 GHQ.CR1			Angelo Headquarters Gage at stilling well (GHQ)  
-## Level1_1.CR1	##	Rivendell Level 1, logger 1 (Level 1_1)  
+**Level1_1.CR1**	Rivendell Level 1, logger 1 (Level 1_1)  
 Level1_2.CR1		Rivendell Level 1, logger 2 (Level 1_2)  
 Level2_1.CR1		Rivendell Level 2, logger 1 (Level 2_1)  
 Level2_2.CR1		Rivendell Level 2, logger 2 (Level 2_2)  
