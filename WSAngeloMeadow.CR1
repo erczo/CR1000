@@ -1,0 +1,157 @@
+'CR1000
+'
+'Program for Weather Station at the Angelo Reserve-Angelo Meadow
+'Weather Station Name: Weather Station, Angelo Meadow (WSAM) or (RWS)
+'Sensors: 
+'  HMP45C (RH [%]& T [0C]), 
+'  CS106 (Barometric Pressure in mbars), 
+'  LI200X Pyranometer (Flux density [kW/m2]and Total [Flux MJ/m2]), 
+'  TE535 Raingauge (mm), 
+'  Yound wind monitor 05103-5 (Wind speed [m/s] and direction), 
+' 
+' Author: Collin Bode (assisted by Short Cut 2.5)
+' Date: January, 2010
+' 
+' replaces original code by
+' program author: Rohit Salve
+' date: September 17, 2008
+'
+' Modified Date: 11/15/2010
+' Collin Bode, UC Berkeley
+' Changed DataInterval on Table from 15minutes to 5 minutes
+'
+' Modified Date: 06/01/2012
+' Collin Bode, UC Berkeley
+' Added NR-Lite Net Radiometer raw (RWS_NR_wm2) and
+' wind, adjusted (RWS_CNR_Wm2)
+'
+' Modified Date: 03/12/2015
+' Chris Wong, UC Berkeley
+' Added TB4 raingauge (RWS_Rain_TB4)
+'
+' ------------------------------
+
+'Declare Public Variables
+Public RWS_Panel_T, 
+Public RWS_batt
+Public RWS_AirT, 
+Public RWS_AirRH
+Public RWS_BaroP
+Public RWS_SlrW    ' changed from RWS_SlrkW
+Public RWS_SlrkJ    ' changed from RWS_SlrMJ
+Public RWS_Rain
+Public RWS_Rain_TB4
+Public RWS_WSpeed
+Public RWS_WSpeed_max  ' new 
+Public RWS_WDirection
+Public Barometric_OffsetP
+Public RWS_NR_Wm2
+Public RWS_CNR_Wm2
+
+Units RWS_Panel_T=Deg C
+Units RWS_batt=Volts
+Units RWS_AirT=Deg C
+Units RWS_AirRH=%
+Units RWS_BaroP=mbar
+Units RWS_SlrW=W/m²
+Units RWS_SlrkJ=kJ/m²
+Units RWS_Rain=mm
+Units RWS_Rain_TB4=mm
+Units RWS_WSpeed=meters/second
+Units RWS_WSpeed_max=meters/second
+Units RWS_WDirection=Degrees
+Units RWS_NR_Wm2=W/m^2
+Units RWS_CNR_Wm2=W/m^2
+
+'Declare Constants
+' Barometric Constant
+' Most meadows in Angelow are at 400meters which should be 966 mbars
+' Cahto Peak at 1,249 should be around 871mbars
+' Barametric offset value is from the CS106 instrument manual. This is different from the CS105.
+' offset = 500 + 1013.25(1-(1-(Elevation_m/44307.69231))^5.25328) = 641.323 at 1,249 meters
+' Const Elevation_m=1249      ' elevation above sea level in meters. 
+' Const Barometric_Offset=500+1013.25*(1-(PWR((1-(Elevation_m/44307.69231)),5.25328)))
+Const Barometric_Offset=500 ' goal is to match actual elevation, not sea level
+
+'Define Data Tables= 
+DataTable(AR_RWS,True,-1)
+	DataInterval(0,5,Min,10)
+	Sample(1,RWS_Panel_T,FP2)
+	Sample(1,RWS_batt,FP2)
+	Average(1,RWS_AirT,FP2,False)
+	FieldNames("RWS_AirT")
+	Sample(1,RWS_AirRH,FP2)
+	Sample(1,RWS_BaroP,IEEE4)
+	Average(1,RWS_SlrW,IEEE4,False)
+	FieldNames("RWS_SlrW")
+	Totalize(1,RWS_SlrkJ,IEEE4,False)
+	FieldNames("RWS_SlrkJ")
+	Totalize(1,RWS_Rain,IEEE4,False)
+	Totalize(1,RWS_Rain_TB4,FP2,False)
+	Average(1,RWS_WSpeed,FP2,False)
+	FieldNames("RWS_WSpeed")
+	Maximum(1,RWS_WSpeed,FP2,False,False)
+	FieldNames("RWS_WSpeed_max")
+	Sample(1,RWS_WDirection,FP2)
+	Average(1,RWS_NR_Wm2,FP2,False)
+  Average(1,RWS_CNR_Wm2,FP2,False)
+EndTable
+
+'Main Program
+BeginProg
+	Scan(30,Sec,1,0)
+	  '
+		'Default Datalogger Battery Voltage measurement Batt_Volt:
+		Battery(RWS_batt)
+		'
+		'Wiring Panel Temperature measurement PTemp_C:
+		PanelTemp(RWS_Panel_T,250)
+		'		
+ 		PortSet(9,1)
+ 		'
+		'HMP45C (6-wire) Temperature & Relative Humidity Sensor measurements AirTC and RH:
+		Delay(0,1,Sec)  ' 150 mSec does not work properly for Barometric pressure
+		VoltSe(RWS_AirT,1,mV2500,1,True,0,_60Hz,0.1,-40)  ' previous mV5000
+		VoltSe(RWS_AirRH,1,mV2500,2,True,0,_60Hz,0.1,0)  ' previous mV5000
+		If RWS_AirRH>100 AND RWS_AirRH<108 Then RWS_AirRH=100
+		'
+		'CS105 Barometric Pressure Sensor measurement BP_mbar:
+		' Diferences from previous code: see constants for Barometric_Offset(500).
+		VoltSe(RWS_BaroP,1,mV2500,3,false,200,250,0.240,Barometric_Offset)
+		'
+		PortSet (9,0)
+		'
+		'LI200X Pyranometer measurements RWS_SlrkJ and SlrW: previous did not totalize kJ.
+		VoltDiff(RWS_SlrW,1,mV7_5,3,True,0,_60Hz,1,0)  ' previous mV25
+		If RWS_SlrW<0 Then RWS_SlrW=0
+		RWS_SlrkJ=RWS_SlrW*12.0
+		RWS_SlrW=RWS_SlrW*200.0
+		'
+		'TE525 Rain Gauge measurement Rain_mm:
+		' multiplier: 0.254 (converts to millimeters), default 0.1. 
+		PulseCount(RWS_Rain,1,1,2,0,0.254,0)   
+		'
+		'TB4/TB4MM Rain Gauge measurement RWS_Rain_mm
+		PulseCount(RWS_Rain_TB4,1,11,2,0,0.2,0)
+		'
+		'05103 Wind Speed & Direction Sensor measurements WS_ms and WindDir:
+		PulseCount(RWS_WSpeed,1,2,1,1,0.098,0)
+		BrHalf(RWS_WDirection,1,mV2500,4,1,1,2500,True,0,_60Hz,355,0)
+		If RWS_WDirection>=360 Then RWS_WDirection=0
+		' added correction because of periodic slightly negative values, wind gusts?
+		If RWS_WDirection<0 Then RWS_WDirection=360+RWS_WDirection  
+		' 
+		' NR-Lite Net Radiometer (dynamic wind speed correction)
+		' CNR stands for Corrected Net Radiometer, SE 15 or Diff 8H
+		'VoltDiff(RWS_NR_Wm2,1,mv25,8,True,0,_60Hz,100,0)
+    VoltSe(RWS_NR_Wm2,1,mv25,15,1,0,_60Hz,100,0)
+		If RWS_WSpeed>=5 Then
+		  RWS_CNR_Wm2=RWS_NR_Wm2*(1+0.021286*(RWS_WSpeed-5))
+		Else
+		  RWS_CNR_Wm2=RWS_NR_Wm2
+    EndIf
+		'
+		'Call Data Tables and Store Data
+		CallTable(AR_RWS)
+	NextScan
+EndProg

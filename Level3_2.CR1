@@ -1,0 +1,120 @@
+' CR1000 Series Datalogger
+'
+' Date:05/06/2010
+' program author:Rohit Salve
+' Program for Level3_2 datalogger to measure one HMP45,one Rain guages,1 Setra Pressure Transducers, 10 SM200 sensors connected to AM416,
+' and 8 + 8 +10 Soil Temperature measurements (with thermocouples)
+'
+' Program modified: Collin Bode, UC Berkeley, 11/15/2010
+' Changed DataInterval on Table from 30 minutes to 5 minutes
+'
+' Program modified: Rohit Salve, 11/23/2010
+' Changed SoilTL3_(26) to (16)
+' Changed Thermocouple subscan from 13 to 8
+'
+' Program modified: Collin Bode, 07/07/2012
+' Changed SoilTL3_(16) back to (26) 
+' Changed Thermocouple subscan from 8 back to 13
+'
+' Program modified: Collin Bode, 05/06/2014
+' Well 10 Pressure Transducer swapped out for a newer model: CS451.
+' Well 10 depth: 27.5 meters
+' Old pressure transducer: Setra Pressure Transducer Model 526
+' Location:  SE 5 "single ended channed #5"
+' Removed code for SM200 multiplexor.
+' 
+' Program modified: Chris Wong, 03/18/2015
+' RG4_mm changed to Rain_mm. Rain gauge replaced with new TB4
+'
+' ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+'Declare Public Variables
+Public i1
+Dim LCount_4
+'Dim SM
+Public OutputFlag302
+Public L302Temp, 
+Public Batt_volt
+Public AirTL3
+Public AirRhL3
+Public Rain_mm
+'Public L3SM_(10)
+Public SoilTL3_(26)
+Public CS451_Well10(2)
+Alias CS451_Well10(1) = Well10_psi
+Alias CS451_Well10(2) = Well10Temp_C
+' Public Well_8  ' old Setra transducer, removed.
+
+
+'Declare Other Variables
+'Example:
+'Dim Counter
+
+'Declare Constants
+'Example:
+'CONST PI = 3.141592654	
+
+'Define Data Tables
+DataTable (Table302,1,-1)
+  'CardOut (0 ,-1)
+  Sample (1,Batt_volt,FP2)
+  Sample (1,L302Temp,FP2)
+  Sample (1,AirTL3,FP2)
+  Sample (1,AirRhL3,FP2)
+  'Sample (1,Well_8,FP2)
+  Sample (1,Well10_psi,FP2)
+  Sample (1,Well10Temp_C,FP2)
+  Totalize (1,Rain_mm,FP2,False)
+  'Sample (10,L3SM_,FP2)
+  Sample (26,SoilTL3_,FP2)
+EndTable
+
+'Main Program
+BeginProg
+  ' Activate Communication on COM4 port
+  ' this is to communicate with L3_1 logger 
+  SerialOpen (COM4,115200,0,0,50)
+  
+	Scan (5,Min,3,0)
+		Battery (Batt_volt)
+		PanelTemp (L302Temp,250)
+		SW12 (1 )
+		Delay (0,3,Sec)
+		VoltDiff (AirTL3,1,mV2500,1,True ,0,250,.1,-40)
+		VoltDiff (AirRhL3,1,mV2500,2,True ,0,250,.1,0)
+		'VoltSe (Well_8,1,mV5000,5,True,10000,250,1.0,0)
+		SW12 (0)
+	'TB4/TB4MM Rain Gauge measurement Rain_mm
+		PulseCount(Rain_mm,1,16,2,0,0.2,0)
+
+		'CS450/CS455 Pressure Transducer measurements water level Well10_psi and Well10Temp_C
+    Move(CS451_Well10(),2,NAN,1)  ' load array with NaNs in case bad readings
+		SDI12Recorder(Well10_psi,1,"0","M1!",1,0)
+		
+    ' SM200's are deprecated. This code will be removed entirely on next update.
+		'Activate multiplexer for SM200 probes
+		'PortSet (2,1 )
+		'	SM=1
+		'SubScan (0,Sec,10)
+		'	PulsePort (3,10000)
+		'	Delay (0,100,mSec)
+		'	VoltSe (L3SM_(SM),1,mV5000,6,False,1000,250,1.0,0)
+		'	SM=SM+1
+		'NextSubScan 
+		'PortSet (2,0)
+		
+	  'Activate multiplexer for Thermocouple measurements
+		PortSet (4 ,1 )
+		LCount_4=1
+		SubScan (0,Sec,13)
+			PulsePort (5,10000)
+			TCDiff (SoilTL3_(LCount_4),2,mV2_5C,5,TypeT,L302Temp,True ,0,_60Hz,1.0,0)
+			LCount_4=LCount_4+2
+		NextSubScan 
+		PortSet (4,0)
+	
+		CallTable Table302
+
+	NextScan
+EndProg
+

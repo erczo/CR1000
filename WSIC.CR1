@@ -1,0 +1,48 @@
+' Weather Station, Ingrid Canopy
+' Angelo Reserve, UC Berkeley
+'CR1000
+'
+'date:  15 October 2008
+'program author: Paul Wooldridge, UC Berkeley
+' program modified: Collin Bode, UC Berkeley, November 11, 2008
+'
+' program modified: Collin Bode, UC Berkeley, February 9, 2011
+' Moved weather station and logger out of Treebeard and into Ingrid.
+' Renamed station from wstb to wsic "Weather Station Ingrid Canopy"
+'
+' program modified: Collin Bode, UC Berkeley, October 22, 2012
+' Vaisala weather station were removed a few months ago. 
+' Modified code to perform minimal recording.  
+' Main function is PakBus relay.
+'
+'Declare Public Variables and Units
+Public PTemp, batt_volt 'datalogger panel T & battery volt
+Public Temp_C 'from misc sensors
+
+'Declare Other Variables
+
+'Declare Constants
+
+'Define Data Tables
+DataTable(WSIC_Table,True,-1)   'True=always trigger on interval, -1=size
+  DataInterval (0,5,Min,10) 'time offset, interval, units, #lapses to remember
+  Average(1,batt_volt,FP2,False)
+  Average(1,PTemp,FP2,False) '# to calc, variable, datatype, exclude current?
+EndTable
+
+'Define Subroutines
+'Sub
+'EnterSub instructions here
+'EndSub
+
+'Main Program
+BeginProg
+  Scan (1,Min,1,0) 'interval, units, buffers, 0=infinite loop
+    'Default datalogger general stuff
+    PanelTemp (PTemp,250) 'datalogger panel T, 250 ms intergration
+    Battery (batt_volt)   'datalogger battery volts
+    'Call Output Tables
+    CallTable WSIC_Table
+  NextScan
+EndProg
+

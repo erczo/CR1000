@@ -1,0 +1,161 @@
+'CR1000
+'
+'Program for Weather Station at the Angelo Reserve-Cahto Peak
+'Weather Station Name: Weather Station, Cahto Peak (WSCP) or (CWS)
+'Sensors: 
+'  HMP45C (RH [%]& T [0C]), 
+'  CS106 (Barometric Pressure in mbars), 
+'  LI200X Pyranometer (Flux density [kW/m2]and Total [Flux MJ/m2]), 
+'  TE535 Raingauge (mm), 
+'  Yound wind monitor 05103-5 (Wind speed [m/s] and direction), 
+'  SR50 Depth of Snow (m)
+' 
+' Author: Collin Bode (assisted by Short Cut 2.5)
+' Date: December 9, 2009 
+' 
+' replaces original code by
+' program author: Rohit Salve
+' date: September 17, 2008
+'
+'  Date: 11/15/2010
+'  Modified: Collin Bode, UC Berkeley
+'  Changed DataInterval on Table from 15minutes to 5 minutes
+'
+' Date: 2/12/2015
+' Modified: Chris Wong, UC Berkeley
+' Added additional TB4 rain gauge
+' ------------------------------
+
+'Declare Public Variables
+Public CWS_Panel_T, 
+Public CWS_batt
+Public CWS_AirT, 
+Public CWS_AirRH
+Public CWS_BaroP
+Public CWS_SlrW    ' changed from CWS_SlrkW
+Public CWS_SlrkJ    ' changed from CWS_SlrMJ
+Public CWS_Rain_Tot
+Public CWS_Rain_TB4
+Public CWS_WSpeed
+Public CWS_WSpeed_max  ' new 
+Public CWS_WDirection
+Public SR50(2)
+Alias SR50(1)=Raw_Dist
+Alias SR50(2)=CWSSnowD_SignalQuality  'now in output table old SignalQuality
+Public Temp_Corr_Distance
+Public CWSSnow_Depth
+Public Barometric_OffsetP
+
+Units CWS_Panel_T=Deg C
+Units CWS_batt=Volts
+Units CWS_AirT=Deg C
+Units CWS_AirRH=%
+Units CWS_BaroP=mbar
+Units CWS_SlrW=W/m²
+Units CWS_SlrkJ=kJ/m²
+Units CWS_Rain_Tot=mm
+Units CWS_Rain_TB4=mm
+Units CWS_WSpeed=meters/second
+Units CWS_WSpeed_max=meters/second
+Units CWS_WDirection=Degrees
+Units CWSSnow_Depth=meters
+
+'Declare Constants
+Const Initial_Distance=2.6  ' the initial distance of the SR50A from the ground in meters
+' Barometric Constant
+' Most meadows in Angelow are at 400meters which should be 966 mbars
+' Cahto Peak at 1,249 should be around 871mbars
+' Barametric offset value is from the CS106 instrument manual. This is different from the CS105.
+' offset = 500 + 1013.25(1-(1-(Elevation_m/44307.69231))^5.25328) = 641.323 at 1,249 meters
+' Const Elevation_m=1249      ' elevation above sea level in meters. 
+' Const Barometric_Offset=500+1013.25*(1-(PWR((1-(Elevation_m/44307.69231)),5.25328)))
+Const Barometric_Offset=500 ' goal is to match actual elevation, not sea level
+
+'Define Data Tables= 
+DataTable(AR_CWS,True,-1)
+	DataInterval(0,5,Min,10)
+	Sample(1,CWS_Panel_T,FP2)
+	Sample(1,CWS_batt,FP2)
+	Average(1,CWS_AirT,FP2,False)
+	FieldNames("CWS_AirT")
+	Sample(1,CWS_AirRH,FP2)
+	Sample(1,CWS_BaroP,IEEE4)
+	Average(1,CWS_SlrW,IEEE4,False)
+	FieldNames("CWS_SlrW")
+	Totalize(1,CWS_SlrkJ,IEEE4,False)
+	FieldNames("CWS_SlrkJ")
+	Totalize(1,CWS_Rain_Tot,IEEE4,False)
+	FieldNames("CWS_Rain_Tot")
+	Totalize(1,CWS_Rain_TB4,FP2,False)
+	FieldNames("CWS_Rain_TB4")
+	Average(1,CWS_WSpeed,FP2,False)
+	FieldNames("CWS_WSpeed")
+	Maximum(1,CWS_WSpeed,FP2,False,False)
+	FieldNames("CWS_WSpeed_max")
+	Sample(1,CWS_WDirection,FP2)
+	Sample(1,CWSSnow_Depth,FP2)
+	Sample(1,CWSSnowD_SignalQuality,FP2)
+EndTable
+
+'Main Program
+BeginProg
+	Scan(30,Sec,1,0)
+	  '
+		'Default Datalogger Battery Voltage measurement Batt_Volt:
+		Battery(CWS_batt)
+		'
+		'Wiring Panel Temperature measurement PTemp_C:
+		PanelTemp(CWS_Panel_T,_60Hz)
+		'		
+ 		PortSet(9,1)
+ 		'
+		'HMP45C (6-wire) Temperature & Relative Humidity Sensor measurements AirTC and RH:
+		Delay(0,1,Sec)  ' 150 mSec is too short a settling time for Barometric pressure
+		VoltSe(CWS_AirT,1,mV2500,1,True,0,_60Hz,0.1,-40)  ' previous mV5000
+		VoltSe(CWS_AirRH,1,mV2500,2,True,0,_60Hz,0.1,0)  ' previous mV5000
+		If CWS_AirRH>100 AND CWS_AirRH<108 Then CWS_AirRH=100
+		'
+		'CS105 Barometric Pressure Sensor measurement BP_mbar:
+		' Diferences from previous code: see constants for Barometric_Offset(500).
+		VoltSe(CWS_BaroP,1,mV2500,3,false,0,_60Hz,0.240,Barometric_Offset)
+		'
+		PortSet (9,0)
+		'
+		'LI200X Pyranometer measurements CWS_SlrkJ and SlrW: previous did not totalize kJ.
+		VoltDiff(CWS_SlrW,1,mV7_5,3,True,0,_60Hz,1,0)  ' previous mV25
+		If CWS_SlrW<0 Then CWS_SlrW=0
+		CWS_SlrkJ=CWS_SlrW*12.0
+		CWS_SlrW=CWS_SlrW*200.0
+		'
+		'TE525 Rain Gauge measurement Rain_mm:
+		' multiplier: 0.254 (converts to millimeters), default 0.1. 
+		PulseCount(CWS_Rain_Tot,1,1,2,0,0.254,0)   
+		'
+		'TB4 Rain gauge measurement CWS_Rain_mm
+		PulseCount(CWS_Rain_TB4,1,12,2,0,0.2,0)
+		'
+		'05103 Wind Speed & Direction Sensor measurements WS_ms and WindDir:
+		PulseCount(CWS_WSpeed,1,2,1,1,0.098,0)
+		BrHalf(CWS_WDirection,1,mV2500,4,1,1,2500,True,0,_60Hz,355,0)
+		If CWS_WDirection>=360 Then CWS_WDirection=0
+		' added correction because of periodic slightly negative values, wind gusts?
+		If CWS_WDirection<0 Then CWS_WDirection=360+CWS_WDirection  
+    '
+		'SR50 Sonic Ranging Sensor (SDI-12 Output) measurements Raw_Dist, Temp_Corr_Distance, and CWSSnow:
+		SDI12Recorder(SR50(),7,"0","M1!",1.0,0)  ' previous M!, missing signal quality
+		Temp_Corr_Distance=Raw_Dist*SQR((CWS_AirT+273.15)/273.15)
+		'Subtract the corrected distance from the initial distance  of the SR50A to the ground
+		CWSSnow_Depth=Initial_Distance-Temp_Corr_Distance
+		' Snow Depth sonic signal quality range description
+		'  0         Not able to read distance (make sure quality is being read!)
+		'  152-210   Good measurement
+		'  210-300   Reduced echo signal strength
+		'  300-600   High uncertainty in measurement
+		' note: add the variable for signal strenght to table when allowed.
+		If CWSSnowD_SignalQuality=0 Then CWSSnow_Depth=NaN
+		If CWSSnowD_SignalQuality>500 Then CWSSnow_Depth=NaN
+		'
+		'Call Data Tables and Store Data
+		CallTable(AR_CWS)
+	NextScan
+EndProg

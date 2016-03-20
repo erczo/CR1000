@@ -1,0 +1,74 @@
+'CR1000
+'Created by Rohit Salve
+'Nov.18,2010
+'Two CS450 Transducers For wells 13 & 14 
+
+'  Date: 02/09/2011
+'  Collin Bode, UC Berkeley
+'  Added CableLength_m as a constant for each well
+'  Added WaterLevel_m calculated value for CS450's
+
+'  Date: 06/15/2011
+'  Collin Bode, UC Berkeley
+'  updated  Well14_CableLength_m from 21.3 to 30.857 meters
+
+' Keep changes to variables, esp cable length in case of power failure
+PreserveVariables 
+
+'Declare Variables and Units
+Public BattV
+Public L203Temp
+Public CS450Da_1(2)
+Public CS450Da_2(2)
+
+' Well Variables
+Public psig2meters
+Public Well13_CableLength_m
+Public Well13_WaterLevel_m
+Public Well14_CableLength_m
+Public Well14_WaterLevel_m
+Alias CS450Da_1(1)=Well13_psi
+Alias CS450Da_1(2)=Well13_ToC
+Alias CS450Da_2(1)=Well14_psi
+Alias CS450Da_2(2)=Well14_ToC
+
+'Define Data Tables
+DataTable(Table203,True,-1)
+  
+	DataInterval(0,5,Min,10)
+	Sample(1,BattV,FP2)
+	Sample (1,L203Temp,FP2)
+	Sample (1,Well13_psi,FP2)
+	Sample (1,Well13_WaterLevel_m,FP2)
+	Sample (1,Well13_ToC,FP2)
+	Sample (1,Well14_psi,FP2)
+	Sample (1,Well14_WaterLevel_m,FP2)
+	Sample (1,Well14_ToC,FP2)
+	
+EndTable
+
+Sub initialize
+   'Initialize stage variables, adjust Offsets as needed
+   ' psig conversion to meters = 2.31 feet/psig * 0.3048 meter/feet = 0.704088 meter/psig
+   psig2meters = 0.704088 
+   Well13_CableLength_m = 17.0      '<========    Enter offset (meters) for pressure transducer in well 1
+   Well14_CableLength_m = 30.857    '<========    Enter offset (meters) for pressure transducer in well 12 
+EndSub
+
+'Main Program
+BeginProg
+  Call initialize
+	Scan(5,Min,1,0)
+		Battery(BattV)
+    PanelTemp (L203Temp,250)
+		
+		SDI12Recorder(Well13_psi,7,"3","M1!",1,0)
+    Well13_WaterLevel_m = -1 * (Well13_CableLength_m - Well13_psi * psig2meters) 
+		SDI12Recorder(Well14_psi,7,"4","M1!",1,0)		
+		Well14_WaterLevel_m = -1 * (Well14_CableLength_m - Well14_psi * psig2meters) 
+
+		'Call Data Tables and Store Data
+		CallTable(Table203)
+		'CallTable(Table2)
+	NextScan
+EndProg

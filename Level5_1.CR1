@@ -1,0 +1,253 @@
+' CR1000
+' Created by Rohit Salve
+' Nov.18,2010
+' Two CS450 Transducers For wells 15 & 16 
+'
+' Date: 02/09/2011
+' Collin Bode, UC Berkeley
+' Added CableLength_m as a constant for each well
+' Added WaterLevel_m calculated value for CS450's
+'
+' 10/01/2011
+' Rohit Salve
+' Added five CS650 probes to measure VWC, EC and Temperature
+' CS650: Water Content Reflectometers
+' Probe,  Serial No., Depth Installed   SD12 Port  SDI12 Address
+' CS15      1783         15 cm               1       3   
+' CS35      1782         35 cm               1       2 
+' CS70      1785         70 cm               1       5
+' CS100     1784        100 cm               1       4 
+' CS138     1781        138 cm               1       1
+'
+' Date: 02/27/2012
+' Collin Bode, UC Berkeley
+' Changed SDI12 address for Well 15 from 5 to 7 to 
+' resolve a conflict between CS70 and Well 15. 
+'
+' Date: 02/06/2013
+' Collin Bode, UC Berkeley
+' Placed two new pressure transducers CS451 to replace older CS450
+' Now includes water temperature
+' Well 15 Transducer, 
+'   SDI12 port: 7
+'   SDI12 address: 6 '0
+' Well 16 Transducer, 
+'   SDI12 port: 7
+'   SDI12 address: 7 '1
+'
+' Date: 05/22/2014
+' Collin Bode, UC Berkeley
+' Added Pyranometer (Apogee SQ-110/CS300) 
+' Reduced scan interval from 5 min to 1min
+'
+' Date: 10/09/2014
+' Collin Bode, UC Berkeley
+' Added code to accesss ICT sap flow logger through Com4 (tried RS232 didnt work) 
+' by Todd Wood (2009, UCB)
+' Also added activation of COM4 for PakBus communication
+'
+' Date: 01/30/2015
+' Chris Wong, UC Berkeley
+' Added a TB4 rain gauge Rain_mm
+
+'Date: 03/26/2015
+' Collin Bode, UC Berkeley
+' Temporarily disabled sap flow code
+
+'PreserveVariables 
+
+' Includes for SapFlow
+'Include "CPU:SapFlowLoggerConstants_ver2.CR1" 
+'Include "CPU:SapFlowLoggerSubroutines_ver2a.CR1"
+
+'Declare Variables and Units
+Dim i
+Public BattV
+Public L501Temp
+
+' CS300-L Apogee SQ-110 Pyranometer
+Public SlrW
+Public SlrkJ
+
+' CS451 Pressure transduers for Wells
+Public CS451_W15(2)
+Public CS451_W16(2)
+
+' CS650 Soil moisture Content probes
+Public CS15(3)
+Public CS35(3)
+Public CS70(3)
+Public CS100(3)
+Public CS138(3)
+
+' Well Variables
+Public psig2meters
+Public Well15_CableLength_m
+Public Well15_WaterLevel_m
+Public Well16_CableLength_m
+Public Well16_WaterLevel_m
+Alias CS451_W15(1)=Well15_psi
+Alias CS451_W15(2)=Well15_ToC
+Alias CS451_W16(1)=Well16_psi
+Alias CS451_W16(2)=Well16_ToC
+
+' Soil Moisture Variables
+Alias CS15 (1)=VMC_CS15
+Alias CS15 (2)=EC_CS15 
+Alias CS15 (3)=Temp_CS15
+Alias CS35 (1)=VMC_CS35
+Alias CS35 (2)=EC_CS35 
+Alias CS35 (3)=Temp_CS35 
+Alias CS70 (1)=VMC_CS70
+Alias CS70 (2)=EC_CS70 
+Alias CS70 (3)=Temp_CS70
+Alias CS100 (1)=VMC_CS100
+Alias CS100 (2)=EC_CS100 
+Alias CS100 (3)=Temp_CS100
+Alias CS138 (1)=VMC_CS138
+Alias CS138 (2)=EC_CS138 
+Alias CS138 (3)=Temp_CS138
+
+' TB4 Rain Gauge
+Public Rain_mm
+
+'Units VMC =m^3/m^3: Units EC= dS/m: Units TSoil= deg C
+Units BattV=Volts
+Units L501Temp=Deg C
+Units SlrW=W/m^2
+Units SlrkJ=kJ/m^2
+Units VMC_CS15=m^3/m^3
+Units EC_CS15=dS/m
+Units Temp_CS15=Deg C
+Units VMC_CS35=m^3/m^3
+Units EC_CS35=dS/m
+Units Temp_CS35=Deg C
+Units VMC_CS70=m^3/m^3
+Units EC_CS70=dS/m
+Units Temp_CS70=Deg C
+Units VMC_CS100=m^3/m^3
+Units EC_CS100=dS/m
+Units Temp_CS100=Deg C
+Units VMC_CS138=m^3/m^3
+Units EC_CS138=dS/m
+Units Temp_CS138=Deg C
+Units Rain_mm=mm
+
+'Define Data Tables
+DataTable(Table501,True,-1)
+  
+	DataInterval(0,5,Min,10)
+	Sample(1,BattV,FP2)
+  Sample (1,L501Temp,FP2)
+  
+  ' Pyranometer
+	Average(1,SlrW,FP2,False)
+	Maximum(1,SlrW,FP2,False,False)
+	Totalize(1,SlrkJ,IEEE4,False)
+	  
+  ' Wells
+	Sample (1,Well15_psi,FP2)
+	Sample (1,Well15_WaterLevel_m,FP2)
+	Sample (1,Well15_ToC,FP2)
+	Sample (1,Well16_psi,FP2)
+	Sample (1,Well16_WaterLevel_m,FP2)
+	Sample (1,Well16_ToC,FP2)
+
+	' CS15
+  Sample (1,VMC_CS15,FP2)
+	Sample (1,EC_CS15,FP2)
+	Sample (1,Temp_CS15,FP2)
+	' CS35
+  Sample (1,VMC_CS35,FP2)
+	Sample (1,EC_CS35,FP2)
+	Sample (1,Temp_CS35,FP2)
+	' CS70
+  Sample (1,VMC_CS70,FP2)
+	Sample (1,EC_CS70,FP2)
+	Sample (1,Temp_CS70,FP2)
+	' CS100
+  Sample (1,VMC_CS100,FP2)
+	Sample (1,EC_CS100,FP2)
+	Sample (1,Temp_CS100,FP2)
+	' CS 138
+  Sample (1,VMC_CS138,FP2)
+	Sample (1,EC_CS138,FP2)
+	Sample (1,Temp_CS138,FP2)
+	
+  ' TB4 Rain Gauge
+  Totalize(1,Rain_mm,FP2,False)
+  
+EndTable
+
+Sub initialize
+   'Initialize stage variables, adjust Offsets as needed
+   ' psig conversion to meters = 2.31 feet/psig * 0.3048 meter/feet = 0.704088 meter/psig
+   psig2meters = 0.704088 
+   Well15_CableLength_m = 31.12      '<========    Enter offset (meters) for pressure transducer in well 1
+   Well16_CableLength_m = 26.35    '<========    Enter offset (meters) for pressure transducer in well 12
+EndSub
+
+'Main Program
+BeginProg
+  Call initialize
+  ' Activate Communication on COM4 port
+  'SerialOpen (COM4,115200,0,0,50)
+
+	Scan(1,Min,1,0)
+		Battery(BattV)
+    PanelTemp (L501Temp,250)
+	
+	 'TB4 Rain Gauge
+		PulseCount(Rain_mm,1,1,2,0,0.2,0)
+		
+    'CS300 Pyranometer measurements SlrkJ and SlrW
+		VoltSe(SlrW,1,mV250,7,1,0,_60Hz,1,0)
+		If SlrW<0 Then SlrW=0
+		SlrkJ=SlrW*1.5
+		SlrW=SlrW*5
+		
+    ' Wells 15 & 16
+		Move(CS451_W15(),2,NAN,1)  ' load array with NaNs in case bad readings
+		Move(CS451_W16(),2,NAN,1)  ' load array with NaNs in case bad readings		 
+		SDI12Recorder(Well15_psi,7,6,"M1!",1,0)
+		SDI12Recorder(Well16_psi,7,7,"M1!",1,0)
+		Well15_WaterLevel_m = -1 * (Well15_CableLength_m - Well15_psi * psig2meters) 
+		Well16_WaterLevel_m = -1 * (Well16_CableLength_m - Well16_psi * psig2meters) 
+		
+  ' Soil Moisture
+    SW12 (1)
+    ' CS15
+	  Move(CS15(),3,NAN,1)  ' load array with NaNs in case bad readings
+		For i=1 To 3  ' 3 tries for valid readings
+      SDI12Recorder (CS15(1),1,3,"M!",1.0,0)
+		Next i
+		' CS35
+		Move(CS35(),3,NAN,1)
+		For i=1 To 3
+      SDI12Recorder (CS35(1),1,2,"M!",1.0,0)
+		Next i
+		' CS70
+		'Move(CS70(),3,NAN,1)
+    For i=1 To 3
+      SDI12Recorder (CS70(1),1,5,"M!",1.0,0)
+		Next i
+    ' CS100
+    Move(CS100(),3,NAN,1)
+    For i=1 To 3
+     SDI12Recorder (CS100(1),1,4,"M!",1.0,0)
+		Next i
+		' CS138  
+		Move(CS138(),3,NAN,1)
+		For i=1 To 3
+		  SDI12Recorder (CS138(1),1,1,"M!",1.0,0)
+		Next i
+		SW12 (0)
+		
+		'Call Data Tables and Store Data
+		CallTable(Table501)
+
+  	' SapFlow call for downloading
+		'Include "CPU:ServiceSAPLogger_ver2.CR1"
+
+	NextScan
+EndProg

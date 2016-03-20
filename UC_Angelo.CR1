@@ -1,0 +1,362 @@
+' Angelo Coast Range Reserve
+' NL100 
+' IP address : xxx.xxx.xxx.xxx  programmed 
+'          internet address : xxx.xxx.xxx.xxx: 
+'    netmask :  255.255.255.0
+'    gateway  : xxx.xxx.x.x
+'    RS232 : 38100
+'    port : 3002
+'    CSI/O : 115200
+'    port : 3001
+'CR1000 Series Datalogger
+'date: May 15, 2012
+'program author:  Greg McCurdy
+
+'Wiring:
+'1H - HMP50 AT/RH      (black)
+'1L - HMP50 AT/RH      (white)
+'AG - HMP50 AT/RH      (blue,clear)
+'   - CS106 BP         (yellow,clear)
+'2H - CS106 BP         (blue)
+'2L - Li200s    RS       (red)     SN  PY75006
+'AG - Li200s    RS       (black,clear)
+'   - Li190    PAR    (black, clear)
+'3H - Li190    PAR    (red)       SN  Q46279   cal 6.48  
+'3L - 05103 WD    (green)
+'AG - TB4 RG Temp TC    (red)
+'4H - TB4 RG Temp TC    (blue)
+'4L - 
+'EX1 -  05103 WD   (blue) 
+'AG - 05103 WD    (white, clear)
+'P1 - 05103 WS    (red) 
+'AG - 05103 WS    (black)
+'P2 - TB4 RG      (black)  
+'AG - TB4 RG      (white,clear)  
+
+'5H - TC 10m (blue)
+'5L - TC 2m (blue)
+'AG - TC 10m & TC 2m  (red)
+'6H - Soil Temp TC  ST 2" (blue)
+'6L - Soil Temp TC  ST 4" (blue)
+'AG - Soil Temp TC  ST 2",4",8",20" (red)
+'7H - Soil Temp TC  ST 8" (blue)
+'7L - Soil Temp TC  ST 20" (blue)
+'AG - CS616  SM         (blk,clr)
+'8H - CS616  SM 4"      (green)
+'8L - CS616  SM vert     (green)
+'AG - 
+'EX2 - 
+'AG -
+'EX3 - 
+'AG - 
+
+'G -   
+'5V -   
+'G -    NL100  (G)
+'SW12 -   NL100  (+12V)
+'G -   CS106 BP         (black) 
+'12V - CS106 BP         (red)
+'    - HMP50 AT/RH     (brown)
+'12V - CS616  SM  4"    (red)
+'    - CS616  SM  vert"    (red)
+'G - 
+'C1 - 
+'C2 - 
+'C3 - 
+'C4 - CS106 BP          (green)
+'G -  
+'C5 - CS616  SM  4"     (orange) 
+'C6 - CS616  SM  vert     (orange)
+'C7 - 
+'C8 -
+'G -
+
+'Declare Public Variables
+'Example:
+
+Public PTemp, batt_volt, Sta_Id, AT_C, RH_pct, BP_mb, BP_satHG, BP_inHG, RS_kw_m2, PAR
+Public WS_mph, WD, PCPN_in, PCPN_tot, RGTemp_C
+Public Soil_T2_C, Soil_T4_C, Soil_T8_C, Soil_T20_C
+Public delta_T_C, TC_C_10, TC_C_2
+Public GOESResult, Jdate
+Public VWC4,VWC_V
+Public CS616_4,CS616_V
+Public SMFlag,SatFlag
+
+'Declare Constants
+'Example:
+'CONST PI = 3.141592654	
+Dim SATData
+Dim SATStatus(13)
+Public SATStatus2(14)
+
+Alias SATStatus(1) = ComCodeResult
+Alias SATStatus(2) = BytesTimedTx
+Alias SATStatus(3) = DayToTimedTx
+Alias SATStatus(4) = HrToTimedTx
+Alias SATStatus(5) = MinToTimedTx
+Alias SATStatus(6) = SecToTimedTx
+Alias SATStatus(7) = BytesRandTx
+Alias SATStatus(8) = HrToRandTx
+Alias SATStatus(9) = MinToRandTx
+Alias SATStatus(10) = SecToRandTx
+Alias SATStatus(11) = FailSafe
+Alias SATStatus(12) = PwrX10
+Alias SATStatus(13) = GPSAquTime
+
+Alias SATStatus2(1) = ComCodeResult2
+Alias SATStatus2(2) = TxType
+Alias SATStatus2(3) = Bytes
+Alias SATStatus2(4) = ForwardTxX10
+Alias SATStatus2(5) = ReflectTxX10
+Alias SATStatus2(6) = PwrX102
+Alias SATStatus2(7) = GPSAquTime2
+Alias SATStatus2(8) = OscDrift
+Alias SATStatus2(9) = LatDeg
+Alias SATStatus2(10) = LatMin
+Alias SATStatus2(11) = LatSec
+Alias SATStatus2(12) = LonDeg
+Alias SATStatus2(13) = LonMin
+Alias SATStatus2(14) = LonSec
+
+Public rTime(9)	'declare as public and dimension rTime to 9
+
+Alias rTime(1) = Year	'assign the alias Year to rTime(1)
+Alias rTime(2) = Month	'assign the alias Month to rTime(2)
+Alias rTime(3) = Day_of_Month	'assign the alias Day_of_Month to rTime(3)
+Alias rTime(4) = Hour	'assign the alias Hour to rTime(4)
+Alias rTime(5) = Minute	'assign the alias Minute to rTime(5)
+Alias rTime(6) = Second	'assign the alias Second to rTime(6)
+Alias rTime(7) = uSecond	'assign the alias uSecond to rTime(7)
+Alias rTime(8) = WeekDay	'assign the alias WeekDay to rTime(8)
+Alias rTime(9) = Day_of_Year	'assign the alias Day_of_Year to rTime(9)
+
+Public GOESResult1(6)
+Alias GOESResult1(1) = ResultCode
+Alias GOESResult1(2) = Time
+Alias GOESResult1(3) = Latitude
+Alias GOESResult1(4) = Longitude
+Alias GOESResult1(5) = Elevation
+Alias GOESResult1(6) = MagVariation
+
+Public GOESResult2(7)
+Alias GOESResult2(1) = GPSYear
+Alias GOESResult2(2) = GPSMonth
+Alias GOESResult2(3) = GPSDay
+Alias GOESResult2(4) = GPSHour
+Alias GOESResult2(5) = GPSMinutes
+Alias GOESResult2(6) = GPSSeconds
+Alias GOESResult2(7) = GPSMicrosec
+
+Const a0 = -0.0663
+Const a1 = -0.0063
+Const a2 = 0.0007
+
+'Define Data Tables
+DataTable (SatTen,1,-1)
+	DataInterval (0,10,Min,0)
+  CardOut (0 ,-1)
+
+  Sample (1,Day_of_Year,FP2)
+  Sample (1,Hour,FP2)
+  Average (1,RS_kw_m2,FP2,False)
+  Average (1,PAR,FP2,False)
+  WindVector (1,WS_mph,WD,FP2,False,0,0,1)
+  Maximum (1,WS_mph,FP2,False,False)
+	Average (1,AT_C,FP2,False)
+	Average (1,RH_pct,FP2,False)
+  Average (1,BP_satHG,FP2,False)
+  Totalize (1,Pcpn_in,FP2,False)
+  Sample (1,Pcpn_tot,FP2)
+  Average (1,RGTemp_C,FP2,False)
+	Average (1,TC_C_2,FP2,False)
+	Average (1,TC_C_10,FP2,False)
+	Average (1,delta_T_C,FP2,False)
+	Average (1,Soil_T2_C,FP2,False) 
+	Average (1,Soil_T4_C,FP2,False) 
+	Average (1,Soil_T8_C,FP2,False) 
+	Average (1,Soil_T20_C,FP2,False) 
+	Average (1,VWC4,FP2,False) 
+	Average (1,VWC_V,FP2,False) 
+	Average (1,batt_volt,FP2,False)
+	Average (1,PTemp,FP2,False)
+	Sample (1,ForwardTxX10,FP2)
+	Sample (1,ReflectTxX10,FP2)
+	Sample (1,Sta_id,FP2)
+
+EndTable
+
+DataTable (TenMin,1,-1)
+	DataInterval (0,10,Min,0)
+  CardOut (0 ,-1)
+  Sample (1,Day_of_Year,FP2)
+  Sample (1,Hour,FP2)
+  Average (1,RS_kw_m2,FP2,False)
+  Maximum (1,RS_kw_m2,FP2,False,False)
+  Minimum (1,RS_kw_m2,FP2,False,False)
+  StdDev (1,RS_kw_m2,FP2,False)
+  Average (1,PAR,FP2,False)
+  Maximum (1,PAR,FP2,False,False)
+  Minimum (1,PAR,FP2,False,False)
+  WindVector (1,WS_mph,WD,FP2,False,0,0,2)
+  Maximum (1,WS_mph,FP2,False,False)
+  StdDev (1,WS_mph,FP2,False)
+  Minimum (1,WS_mph,FP2,False,False)
+  Maximum (1,AT_C,FP2,0,False)
+  Minimum (1,AT_C,FP2,0,False)
+	Average (1,AT_C,FP2,False)
+  Maximum (1,RH_pct,FP2,0,False)
+  Minimum (1,RH_pct,FP2,0,False)
+	Average (1,RH_pct,FP2,False)
+  Average (1,BP_mb,IEEE4,False)
+  Totalize (1,Pcpn_in,FP2,False)
+  Sample (1,Pcpn_tot,FP2)
+  Average (1,RGTemp_C,FP2,False)
+  Maximum (1,TC_C_2,FP2,0,False)
+  Minimum (1,TC_C_2,FP2,0,False)
+	Average (1,TC_C_2,FP2,False)
+  Maximum (1,TC_C_10,FP2,0,False)
+  Minimum (1,TC_C_10,FP2,0,False)
+	Average (1,TC_C_10,FP2,False)
+  Maximum (1,delta_T_C,FP2,0,False)
+  Minimum (1,delta_T_C,FP2,0,False)
+	Average (1,delta_T_C,FP2,False)
+  Maximum (1,Soil_T2_C,FP2,0,False)
+  Minimum (1,Soil_T2_C,FP2,0,False)
+	Average (1,Soil_T2_C,FP2,False) 
+  Maximum (1,Soil_T4_C,FP2,0,False)
+  Minimum (1,Soil_T4_C,FP2,0,False)
+	Average (1,Soil_T4_C,FP2,False) 
+  Maximum (1,Soil_T8_C,FP2,0,False)
+  Minimum (1,Soil_T8_C,FP2,0,False)
+	Average (1,Soil_T8_C,FP2,False) 
+  Maximum (1,Soil_T20_C,FP2,0,False)
+  Minimum (1,Soil_T20_C,FP2,0,False)
+	Average (1,Soil_T20_C,FP2,False) 
+	Average (1,VWC4,FP2,False) 
+	Average (1,VWC_V,FP2,False) 
+	Average (1,CS616_4,FP2,False) 
+	Average (1,CS616_V,FP2,False) 
+  Maximum (1,batt_volt,FP2,0,False)
+  Minimum (1,batt_volt,FP2,0,False)
+	Average (1,batt_volt,FP2,False)
+	Average (1,PTemp,FP2,False)
+	Sample (1,ForwardTxX10,FP2)
+	Sample (1,ReflectTxX10,FP2)
+	Sample (1,Sta_id,FP2)
+
+EndTable
+
+'Define Subroutines
+'Sub
+	'EnterSub instructions here
+'EndSub
+
+'Main Program
+BeginProg
+
+	Scan (3,Sec,0,0)
+	
+	  If TimeIntoInterval (3,1440,Min) 
+	     SW12(0)
+	  EndIf
+	  If TimeIntoInterval (5, 1440, Min)
+	     SW12(1)
+	  EndIf
+	  If batt_volt > 12.8 then
+	     SW12(1)
+	  EndIf
+	  If batt_volt < 12.1 then
+	     SW12(0)
+	  EndIf
+	  
+
+'		If TimeIntoInterval (1,60,Min) and SatFlag = 0
+'			GOESData(SATData,SatTen,2,0,0)
+'			SatFlag = 1
+'		EndIf
+'		If TimeIntoInterval (2,60,Min)
+'		  SatFlag = 0
+'		EndIf
+'		If TimeIntoInterval (57,60,min)
+'			GOESStatus (SATStatus,1)
+'		EndIf
+'		If TimeIntoInterval (58,60,min)
+'			GOESStatus (SATStatus2,2)
+'		EndIf
+'		If TimeIntoInterval (5,60,Min)
+'			GOESGPS (GOESResult1(), GOESResult2())
+'		EndIf
+
+		If TimeIntoInterval (0,60,sec) then
+			SMFlag = 1
+		Else
+			SMFlag = 0
+		EndIf
+		
+	  'Store Current date and time
+	  RealTime (rTime)
+	  Hour = (Hour*100) + Minute
+
+    'set Station Id
+    Sta_id = 412
+    
+    ' Datalogger Panel temperature
+		PanelTemp (PTemp,250)
+
+		' Datalogger Battery Voltage
+		Battery (Batt_volt)
+
+		' HMP50 AT/RH
+		VoltSE (AT_C,1,mV2500,1,0,0,_60Hz,0.1,-40.0)
+		VoltSe (RH_pct,1,mV2500,2,0,0,_60Hz,0.1,0)
+		If (RH_pct > 100) and (RH_pct < 108) then RH_pct = 100
+
+		' Barometric Pressure (CS106)
+		PortSet (4 ,1 )
+		Delay (0,1,Sec)
+		VoltSe (BP_mb,1,mV2500,3,0,0,_60Hz,0.240,500)
+		PortSet (4,0)
+		BP_inHG = BP_mb * .02954
+		BP_satHG = BP_inHG - 20
+
+		' Solar Radiation (LiCor 200s)
+		VoltSe (RS_kw_m2,1,mV250,4,1,0,_60Hz,0.2,0)
+		
+		' PAR (Licor 190s)
+		VoltSe (PAR,1,mV25,5,1,0,_60Hz,0.15432,0)       'SN Q46279
+
+		' Wind Speed/Wind Dir (RM Young 05103)
+		PulseCount (WS_mph,1,1 ,1,1,0.2192,0)
+		BrHalf (WD,1,mV2500,6,Vx1,1,2500,True ,0,_60Hz,355,0)
+
+		' AT profile
+		TCSe (TC_C_10,1,mV2_5C,9,TypeT,PTemp,1,0,250,1.0,0)
+		TCSe (TC_C_2,1,mV2_5C,10,TypeT,PTemp,1,0,250,1.0,0)
+		delta_T_C = TC_C_10 - TC_C_2 
+
+		' Soil Temperature Thermocouple
+		TCSe (Soil_T2_C,1,mV2_5C,11,TypeT,PTemp,True ,0,250,1.0,0)
+		TCSe (Soil_T4_C,1,mV2_5C,12,TypeT,PTemp,True ,0,250,1.0,0)
+		TCSe (Soil_T8_C,1,mV2_5C,13,TypeT,PTemp,True ,0,250,1.0,0)
+		TCSe (Soil_T20_C,1,mV2_5C,14,TypeT,PTemp,True ,0,250,1.0,0)
+		
+ 	' CS616 Soil Moisture
+		If SMFlag = 1 then
+		   CS616 (CS616_4,1,15,5,1,1.0,0)
+		   CS616 (CS616_V,1,16,6,1,1.0,0)
+		   VWC4 = a0 + a1*CS616_4 + a2*CS616_4^2
+		   VWC_V = a0 + a1*CS616_V + a2*CS616_V^2
+		EndIf
+
+    ' TB4 Tipping Bucket Raingauge
+    PulseCount (PCPN_in,1,2,2,0,0.01,0)
+    PCPN_tot = PCPN_tot + PCPN_in
+		TCSe (RGTemp_C,1,mV2_5C,7,TypeT,PTemp,1,0,250,1.0,0)
+
+		CallTable SatTen
+		CallTable TenMin
+		
+	NextScan
+EndProg
+

@@ -1,0 +1,120 @@
+'CR1000 Series Datalogger
+
+'Date:111810
+'program author:Rohit Salve
+'Program for Level1_2 datalogger to measure one HMP45, one Rain guage, One Setra Pressure Transducer (Elder), Two CS450 Transducers in Well 1 and Well 12 , 9 SM200 sensors connected to AM416,
+'and 8 Soil Temperature measurements (with thermocouples)
+
+'  Date: 02/09/2011
+'  Collin Bode, UC Berkeley
+'  Added CableLength_m as a constant for each well
+'  Added WaterLevel_m calculated value for CS450's
+
+' Keep changes to variables, esp cable length in case of power failure
+PreserveVariables 
+
+
+'Declare Public Variables
+Public io1
+Dim LCount_4
+Dim SM
+Public OutputFlag102
+Public L102Temp,
+Public Batt_volt
+Public AirT102       
+Public AirRh102      
+Public RG1_mm
+Public L1SM_(9)
+Public CS450Da_1(2)
+Public CS450Da_2(2)
+Public River_Ht
+Public SoilTL1_(8)
+
+' Well Variables
+Public psig2meters
+Alias CS450Da_1(1)=Well1_psi
+Alias CS450Da_1(2)=Well1_ToC
+Public Well1_CableLength_m
+Public Well1_WaterLevel_m
+Alias CS450Da_2(1)=Well12_psi
+Alias CS450Da_2(2)=Well12_ToC
+Public Well12_CableLength_m
+Public Well12_WaterLevel_m
+
+'Define Data Tables
+DataTable (Table102,OutputFlag102,-1)
+  DataInterval (0,5,Min,10)    'added data interval to limit final storage space used
+  Sample (1,Batt_volt,FP2)      'corrected the syntax
+  Sample (1,L102Temp,FP2)        'corrected the syntax
+  Sample (1,AirT102,FP2)
+  Sample (1,AirRh102,FP2)
+
+  Sample (1,River_Ht,FP2)
+  Sample (1,Well1_psi,FP2)
+  Sample (1,Well1_WaterLevel_m,FP2)
+  Sample (1,Well1_ToC,FP2)
+  Sample (1,Well12_psi,FP2)
+  Sample (1,Well12_WaterLevel_m,FP2)
+  Sample (1,Well12_ToC,FP2)
+
+  Totalize (1,RG1_mm,FP2,False)
+  Sample (9,L1SM_,FP2)
+  Sample (8,SoilTL1_,FP2)
+EndTable
+
+Sub initialize
+   'Initialize stage variables, adjust Offsets as needed
+   ' psig conversion to meters = 2.31 feet/psig * 0.3048 meter/feet = 0.704088 meter/psig
+   psig2meters = 0.704088 
+   Well1_CableLength_m =  7.04     '<========    Enter offset (meters) for pressure transducer in well 1
+   Well12_CableLength_m = 7.05     '<========    Enter offset (meters) for pressure transducer in well 12
+EndSub
+
+'Main Program
+BeginProg
+  Call initialize
+  Scan (5,Min,3,0)
+    Battery (Batt_volt)
+    PanelTemp (L102Temp,250)
+    SW12 (1 )
+    Delay (0,3,Sec)
+    VoltDiff (AirT102,1,mV2500,1,True ,0,250,.1,-40)
+    VoltDiff (AirRh102,1,mV2500,2,True ,0,250,.1,0)
+    VoltSe (River_Ht,1,mV5000,6,False,1000,250,1.0,0)
+
+    ' well_head_m = transducer depth below water surface in meters
+    ' Well 1 get water level
+    SDI12Recorder (Well1_psi,7,2,"M!",1.0,0)
+    Well1_WaterLevel_m = -1 * (Well1_CableLength_m - Well1_psi * psig2meters) 
+    ' Well 12 get stage
+    SDI12Recorder (Well12_psi,7,1,"M!",1.0,0)
+    Well12_WaterLevel_m =  -1 * (Well12_CableLength_m - Well12_psi * psig2meters)
+    SW12 (0)
+    PulseCount (RG1_mm,1,1,2,0,0.254,0)
+
+    'Activate multiplexer for SM200 probes
+    PortSet (1,1 )
+    SM=1
+    SubScan (0,Sec,9)
+      PulsePort (2,10000)
+      Delay (0,100,mSec)
+      VoltSe (L1SM_(SM),1,mV5000,7,False,1000,250,1.0,0)
+      SM=SM+1    'replaced an = with a +
+    NextSubScan
+    PortSet (1,0)
+
+    'Activate multiplexer for Thermocouple measurements
+    PortSet (3 ,1 )
+    LCount_4=1
+    SubScan (0,Sec,8)  'replaced 4 with 8
+      PulsePort (4,10000)
+      TCDiff (SoilTL1_(LCount_4),2,mV2_5C,5,TypeT,L102Temp,True ,0,_60Hz,1.0,0)
+      LCount_4=LCount_4+1  'replaced 2 with 1
+    NextSubScan
+    'deleted PulsePort (4,0) and replaced it with portset(3,0)
+    PortSet (3 ,0 )
+    OutputFlag102=true
+    CallTable Table102
+    OutputFlag102=false
+  NextScan
+EndProg

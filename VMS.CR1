@@ -1,0 +1,279 @@
+' Vadose Monitoring System 
+' 
+' 5 minute interval - Berkeley Sensor Database compatible
+' Two boreholes: Aleph & Bet. 
+' Aleph has TDT's and matrix rock pressure transducers.
+' Bet has fractured flow pressure transducers and gas sampling tubes.
+'
+' Created by michael kugel
+' Modified by Collin Bode, Nov. 2015
+' - Combined 4 tables (PT,batt, Calibrat_TDTvwc,TDTtemp) into one (VMS).
+' - Changed timing to 5 minutes from 15 minutes
+' - Added non-calibrated permitivity
+' - Added sleeve-wall EC.  See comment below from Ofer.
+' "Nevertheless. I do recommend that the data of the permittivity and EC will not be available to everyone. 
+' Simply because it is not calibrated has nothing to do with the actual permittivity and EC. 
+' Remember the original waveguides were replaced by other. If the data will be used by other not aware 
+' of the modification it may be mal interpreted. In addition the forth parameter is EC which is not relevant 
+' since the waveguides are not in contact with the soil." -- Ofer
+
+
+'Declare Variables and Units
+Dim LCount
+Public BattV
+Public PTemp_C
+' PT is Pressure Transducer array of two sets of 10. 
+Public PT(20)
+' TDT soil moiture arrays. 
+' First value is raw % water content, second value temperature
+' Third value is non-calibrated permittivity, fourth value is EC of the plastic sleeve.
+Public TDT_1(4)
+Public TDT_2(4)
+Public TDT_3(4)
+Public TDT_4(4)
+Public TDT_5(4)
+Public TDT_6(4)
+Public TDT_7(4)
+Public TDT_8(4)
+Public TDT_9(4)
+Public TDT_10(4)
+' Calibrated volumetric water content. Custom calibration using water & alcohols
+' See Ofer Dahan's publications for calibration methods.
+Public C_VWC_1
+Public C_VWC_2
+Public C_VWC_3
+Public C_VWC_4
+Public C_VWC_5
+Public C_VWC_6
+Public C_VWC_7
+Public C_VWC_8
+Public C_VWC_9
+Public C_VWC_10
+
+' Pressure Transducers
+Alias PT(1)=PT_Aleph_1
+Alias PT(2)=PT_Aleph_2
+Alias PT(3)=PT_Aleph_3
+Alias PT(4)=PT_Aleph_4
+Alias PT(5)=PT_Aleph_5
+Alias PT(6)=PT_Aleph_6
+Alias PT(7)=PT_Aleph_7
+Alias PT(8)=PT_Aleph_8
+Alias PT(9)=PT_Aleph_9
+Alias PT(10)=PT_Aleph_10
+Alias PT(11)=PT_Bet_1
+Alias PT(12)=PT_Bet_2
+Alias PT(13)=PT_Bet_3
+Alias PT(14)=PT_Bet_4
+Alias PT(15)=PT_Bet_5
+Alias PT(16)=PT_Bet_6
+Alias PT(17)=PT_Bet_7
+Alias PT(18)=PT_Bet_8
+Alias PT(19)=PT_Bet_9
+Alias PT(20)=PT_Bet_10
+
+' TDT1
+Alias TDT_1(1)=VWC_1
+Alias TDT_1(2)=TEMP_1
+Alias TDT_1(3)=NCPermit_1 
+Alias TDT_1(4)=SleeveEC_1
+' TDT2
+Alias TDT_2(1)=VWC_2
+Alias TDT_2(2)=TEMP_2
+Alias TDT_2(3)=NCPermit_2 
+Alias TDT_2(4)=SleeveEC_2
+' TDT3
+Alias TDT_3(1)=VWC_3
+Alias TDT_3(2)=TEMP_3
+Alias TDT_3(3)=NCPermit_3 
+Alias TDT_3(4)=SleeveEC_3
+' TDT4
+Alias TDT_4(1)=VWC_4
+Alias TDT_4(2)=TEMP_4
+Alias TDT_4(3)=NCPermit_4 
+Alias TDT_4(4)=SleeveEC_4
+' TDT5
+Alias TDT_5(1)=VWC_5
+Alias TDT_5(2)=TEMP_5
+Alias TDT_5(3)=NCPermit_5 
+Alias TDT_5(4)=SleeveEC_5
+' TDT6
+Alias TDT_6(1)=VWC_6
+Alias TDT_6(2)=TEMP_6
+Alias TDT_6(3)=NCPermit_6
+Alias TDT_6(4)=SleeveEC_6
+' TDT7
+Alias TDT_7(1)=VWC_7
+Alias TDT_7(2)=TEMP_7
+Alias TDT_7(3)=NCPermit_7
+Alias TDT_7(4)=SleeveEC_7
+' TDT8
+Alias TDT_8(1)=VWC_8
+Alias TDT_8(2)=TEMP_8
+Alias TDT_8(3)=NCPermit_8 
+Alias TDT_8(4)=SleeveEC_8
+' TDT99
+Alias TDT_9(1)=VWC_9
+Alias TDT_9(2)=TEMP_9
+Alias TDT_9(3)=NCPermit_9 
+Alias TDT_9(4)=SleeveEC_9
+' TDT10
+Alias TDT_10(1)=VWC_10
+Alias TDT_10(2)=TEMP_10
+Alias TDT_10(3)=NCPermit_10 
+Alias TDT_10(4)=SleeveEC_10
+
+' Units for parameters
+Units BattV=Volts
+Units PT=mbar
+Units PTemp_C=Deg C
+Units C_VWC_1=%
+Units TEMP_1=Deg C
+Units C_VWC_2=%
+Units TEMP_2=Deg C
+Units C_VWC_3=%
+Units TEMP_3=Deg C
+Units C_VWC_4=%
+Units TEMP_4=Deg C
+Units C_VWC_5=%
+Units TEMP_5=Deg C
+Units C_VWC_6=%
+Units TEMP_6=Deg C
+Units C_VWC_7=%
+Units TEMP_7=Deg C
+Units C_VWC_8=%
+Units TEMP_8=Deg C
+Units C_VWC_9=%
+Units TEMP_9=Deg C
+Units C_VWC_10=%
+Units TEMP_10=Deg C
+
+
+'Define Data Tables
+DataTable(VMS,True,-1)
+	DataInterval(0,5,Min,10)
+	' Battery
+  Minimum(1,BattV,FP2,False,False)
+	Sample(1,PTemp_C,FP2)
+	' Pressure transducers from both Aleph and Bet
+	Sample (20,PT(),FP2)
+	' Aleph TDT's uncalibrated Volumetric Water Content
+	Sample (1,VWC_1,FP2)
+	Sample (1,VWC_2,FP2)
+	Sample (1,VWC_3,FP2)
+	Sample (1,VWC_4,FP2)
+	Sample (1,VWC_5,FP2)
+	Sample (1,VWC_6,FP2)
+	Sample (1,VWC_7,FP2)
+	Sample (1,VWC_8,FP2)
+	Sample (1,VWC_9,FP2)
+	Sample (1,VWC_10,FP2)
+	' Aleph Calibrated Volumetric Water Content
+	Sample(1,C_VWC_1,FP2)
+	Sample(1,C_VWC_2,FP2)
+	Sample(1,C_VWC_3,FP2)
+	Sample(1,C_VWC_4,FP2)
+	Sample(1,C_VWC_5,FP2)
+	Sample(1,C_VWC_6,FP2)
+	Sample(1,C_VWC_7,FP2)
+	Sample(1,C_VWC_8,FP2)
+	Sample(1,C_VWC_9,FP2)
+	Sample(1,C_VWC_10,FP2)
+	' TDTtemp
+	Sample(1,TEMP_1,FP2)
+	Sample(1,TEMP_2,FP2)
+	Sample(1,TEMP_3,FP2)
+	Sample(1,TEMP_4,FP2)
+	Sample(1,TEMP_5,FP2)
+	Sample(1,TEMP_6,FP2)
+	Sample(1,TEMP_7,FP2)
+	Sample(1,TEMP_8,FP2)
+	Sample(1,TEMP_9,FP2)
+	Sample(1,TEMP_10,FP2)
+	' TDT Not Calibrated Permitivity
+	Sample(1,NCPermit_1,FP2)
+	Sample(1,NCPermit_2,FP2)
+  Sample(1,NCPermit_3,FP2)
+	Sample(1,NCPermit_4,FP2)
+	Sample(1,NCPermit_5,FP2)
+  Sample(1,NCPermit_6,FP2)
+	Sample(1,NCPermit_7,FP2)
+	Sample(1,NCPermit_8,FP2)
+  Sample(1,NCPermit_9,FP2)
+	Sample(1,NCPermit_10,FP2)
+	' TDT Sleeve Electrical Conductivity
+	Sample(1,SleeveEC_1,FP2)
+	Sample(1,SleeveEC_2,FP2)
+  Sample(1,SleeveEC_3,FP2)
+	Sample(1,SleeveEC_4,FP2)
+	Sample(1,SleeveEC_5,FP2)
+  Sample(1,SleeveEC_6,FP2)
+	Sample(1,SleeveEC_7,FP2)
+	Sample(1,SleeveEC_8,FP2)
+  Sample(1,SleeveEC_9,FP2)
+	Sample(1,SleeveEC_10,FP2)
+EndTable
+
+'Main Program
+BeginProg
+	Scan(60,Sec,1,0)
+		'Default Datalogger Battery Voltage measurement BattV
+		Battery(BattV)
+		'Wiring Panel Temperature measurement PTemp_C
+		PanelTemp(PTemp_C,_50Hz)
+		
+		' Turn on borehole equipment once every sample interval only
+		If IfTime (0,5,Min)Then
+		  'Turn AM16/32 Multiplexer On
+		  PortSet(2,1)
+		  Delay(0,150,mSec)
+		  LCount=1
+  		SubScan(0,uSec,20)
+	  		'Switch to next AM16/32 Multiplexer channel
+		  	PulsePort(1,10000)
+			  'Generic Differential Voltage measurements PT() on the AM16/32 Multiplexer:
+			  VoltDiff(PT(LCount),1,mV25,1,True,0,_50Hz,50,0)
+			  LCount=LCount+1
+		  NextSubScan
+		  'Turn AM16/32 Multiplexer Off
+		  PortSet(2,0)
+		  Delay(0,150,mSec)
+
+  		'Generic SDI-12 Sensor measurements tdt1_1,tdt1_2,tdt1_3,tdt1_4 
+	  	SDI12Recorder(TDT_1(),7,"1","M!",1,0)
+		  'Generic SDI-12 Sensor measurements tdt2
+		  SDI12Recorder(TDT_2(),7,"2","M!",1,0)
+		  'Generic SDI-12 Sensor measurements tdt3
+		  SDI12Recorder(TDT_3(),7,"3","M!",1,0)
+		  'Generic SDI-12 Sensor measurements tdt4
+		  SDI12Recorder(TDT_4(),7,"4","M!",1,0)
+		  'Generic SDI-12 Sensor measurements tdt5
+		  SDI12Recorder(TDT_5(),7,"5","M!",1,0)
+		  'Generic SDI-12 Sensor measurements tdt6
+		  SDI12Recorder(TDT_6(),7,"6","M!",1,0)
+		  'Generic SDI-12 Sensor measurements tdt7
+		  SDI12Recorder(TDT_7(),7,"7","M!",1,0)
+		  'Generic SDI-12 Sensor measurements tdt8
+		  SDI12Recorder(TDT_8(),7,"8","M!",1,0)
+		  'Generic SDI-12 Sensor measurements tdt9
+		  SDI12Recorder(TDT_9(),7,"9","M!",1,0)
+		  'Generic SDI-12 Sensor measurements tdt10
+		  SDI12Recorder(TDT_10(),7,"0","M!",1,0)
+		
+      C_VWC_1=(VWC_1^3*0.0058)-(VWC_1^2*0.244)+(VWC_1*4.3767)-25.027
+      C_VWC_2=(VWC_2^3*0.0058)-(VWC_2^2*0.244)+(VWC_2*4.3767)-25.027
+      C_VWC_3=(VWC_3^3*0.0058)-(VWC_3^2*0.244)+(VWC_3*4.3767)-25.027
+      C_VWC_4=(VWC_4^3*0.0058)-(VWC_4^2*0.244)+(VWC_4*4.3767)-25.027
+      C_VWC_5=(VWC_5^3*0.0058)-(VWC_5^2*0.244)+(VWC_5*4.3767)-25.027
+      C_VWC_6=(VWC_6^3*0.0058)-(VWC_6^2*0.244)+(VWC_6*4.3767)-25.027
+      C_VWC_7=(VWC_7^3*0.0058)-(VWC_7^2*0.244)+(VWC_7*4.3767)-25.027
+      C_VWC_8=(VWC_8^3*0.0058)-(VWC_8^2*0.244)+(VWC_8*4.3767)-25.027
+      C_VWC_9=(VWC_9^3*0.0058)-(VWC_9^2*0.244)+(VWC_9*4.3767)-25.027
+      C_VWC_10=(VWC_10^3*0.0058)-(VWC_10^2*0.244)+(VWC_10*4.3767)-25.027
+    
+		  'Call Data Tables and Store Data
+		  CallTable(VMS)	
+		EndIf
+
+	NextScan
+EndProg

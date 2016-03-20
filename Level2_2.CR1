@@ -1,0 +1,146 @@
+' CR1000 Series Datalogger
+'
+' Program for Level2_2 datalogger to measure one HMP45, one barometric probe, two Rain guages, 2 Setra Pressure Transducers, 11 SM200 sensors connected to AM416,
+' and 20 Soil Temperature measurements (with thermocouples)
+'
+' Date:052808
+' program author:Rohit Salve
+'
+' Date:050610
+' program author: Rohit Salve
+' added 12 Soil Temperature measurements
+'
+' Date: April 5, 2010
+' modified by: Collin Bode, April 5, 2010
+' swapped well 2 & 3: Se 6 & 7
+'
+' Date: 11/15/2010
+' modified by: Collin Bode, UC Berkeley
+' Changed DataInterval on Table from 30 minutes to 5 minutes
+'
+' Date: 03/12/2014
+' modified by: Collin Bode, UC Berkeley
+' Removed SM200 probes: they did not produce useful data.
+' Swapped out the Setra Pressure Transducer at Well 2  
+' for CS451 Pressure Transducers
+'
+' Date: 05/04/2014
+' modified by: Collin Bode, UC Berkeley
+' Swapped out the Setra Pressure Transducer at Well 3  
+' for CS451 Pressure Transducers
+'
+' Date: 03/18/2015
+' modified by: Chris Wong, UC Berkeley
+' Removed RG2_mm and RG3_mm and replaced with a new TB4 rain gauge Rain_mm (mm)
+
+'Declare Public Variables
+'Example:
+Public i1
+Dim LCount_4
+Dim SM
+Public OutputFlag202
+Public L202Temp, 
+Public Batt_volt
+Public AirTL2
+Public AirRhL2
+Public BaroL2_mb
+Public Rain_mm
+'Public L2SM_(11)
+'Public Well_2
+'Public Well_3
+Public SoilTL2_(20)
+Public CS451_Well2(2)
+Public CS451_Well3(2)
+
+Alias CS451_Well2(1)=Well2_psi
+Alias CS451_Well2(2)=Well2Temp_C
+Alias CS451_Well3(1)=Well3_psi
+Alias CS451_Well3(2)=Well3Temp_C
+
+'Declare Other Variables
+'Example:
+'Dim Counter
+
+'Declare Constants
+'Example:
+'CONST PI = 3.141592654	
+
+'Define Data Tables
+DataTable (Table202,1,-1)
+  CardOut (0 ,-1)
+  Sample (1,Batt_volt,FP2)
+  Sample (1,L202Temp,FP2)
+  Sample (1,AirTL2,FP2)
+  Sample (1,AirRhL2,FP2)
+  Sample (1,BaroL2_mb,FP2)
+  Totalize(1,Rain_mm,FP2,False)
+  Sample (20,SoilTL2_,FP2)
+  Sample (1,Well2_psi,FP2)
+  Sample (1,Well2Temp_C,FP2)
+  Sample (1,Well3_psi,FP2)
+  Sample (1,Well3Temp_C,FP2)  
+  'Sample (1,Well_2,FP2)
+  'Sample (1,Well_3,FP2)
+  'Sample (11,L2SM_,FP2)
+EndTable
+
+'Main Program
+BeginProg
+  ' Activate Communication on COM4 port
+  ' this is to communicate with L3_2 logger 
+  SerialOpen (COM4,115200,0,0,50)
+
+	Scan (5,Min,3,0)
+		Battery (Batt_volt)
+		PanelTemp (L202Temp,250)
+		SW12 (1)
+		Delay (0,3,Sec)
+		VoltDiff (AirTL2,1,mV2500,1,True ,0,250,.1,-40)
+		VoltDiff (AirRhL2,1,mV2500,2,True ,0,250,.1,0)
+		' NOTE: Port C1 is shared between the barometer and wells 2 & 3
+		PortSet (1 ,1 )
+		  Delay (0,20,Sec)
+		  VoltSe (BaroL2_mb,1,mV2500,5,1,0,_60Hz,0.184,600)
+		  BaroL2_mb=BaroL2_mb*1.0
+		PortSet (1 ,0)
+		' April 5,2010 switched well 2 & well 3 fields.  
+		' VoltSe #7 wiring goes to well 2, but was listed as well 3. 
+		' -- Collin Bode
+		'VoltSe (Well_2,1,mV5000,7,False,1000,250,1.0,0)
+		'VoltSe (Well_3,1,mV5000,6,False,1000,250,1.0,0)
+		SW12 (0)
+		'TB4/TB4MM Rain Gauge measurement Rain_mm
+		PulseCount(Rain_mm,1,16,2,0,0.2,0)
+
+		'Activate multiplexer for SM200 probes
+		'PortSet (2,1 )
+		'	SM=1
+		'SubScan (0,Sec,11)
+		'	PulsePort (3,10000)
+		'	Delay (0,100,mSec)
+		'	VoltSe (L2SM_(SM),1,mV5000,8,False,1000,250,1.0,0)
+		'	SM=SM+1
+		'NextSubScan 
+		'PortSet (2,0)
+		
+	'Activate multiplexer for Thermocouple measurements
+		PortSet (4 ,1 )
+		LCount_4=1
+		SubScan (0,Sec,10)
+			PulsePort (5,10000)
+			TCDiff (SoilTL2_(LCount_4),2,mV2_5C,5,TypeT,L202Temp,True ,0,_60Hz,1.0,0)
+			LCount_4=LCount_4+2
+		NextSubScan 
+		PortSet (4,0)
+
+		'CS450/CS455 Pressure Transducer measurements 
+		Move(CS451_Well2(),2,NAN,1)  ' load array with NaNs in case bad readings
+		Move(CS451_Well3(),2,NAN,1)  ' otherwise temp persists
+		SDI12Recorder(Well2_psi,1,2,"M1!",1,0)
+		SDI12Recorder(Well3_psi,1,3,"M1!",1,0)
+
+    CallTable Table202
+
+	NextScan
+EndProg
+

@@ -1,0 +1,182 @@
+'CR1000 Series Datalogger
+'Date: May 29, 2008, Sampling Time changed on Oct. 29, 2008
+'Program author:Rohit Salve
+'Program to monitor Level3_1 at Rivendell
+'Setup includes (1)TDR system with four level 2 multiplexers with 7+8+8+8 probes.
+'(Not probe lengths and cable lengths vary)
+'(2) Three AM416 multiplexers with 24 resistance measurements each
+
+' Program modified: Collin Bode, UC Berkeley, 11/15/2010
+'  	Changed DataInterval on Table from 60 minutes to 5 minutes
+
+' Program modified: Collin Bode, UC Berkeley, 05/05/2012
+'   Added code to accesss ICT sap flow logger through Com4 (tried RS232 didnt work) 
+'   by Todd Wood (2009, UCB)
+'   removed-->Also added activation of COM4 for PakBus communication
+'
+
+' Includes for SapFlow
+Include "CPU:SapFlowLoggerConstants_ver2.CR1" 
+Include "CPU:SapFlowLoggerSubroutines_ver2a.CR1"
+
+'Declare Public Variables
+Public i1
+Public OutputFlag301
+Public Temp301,  
+Public DLBatt_V
+Public LaL_(31)
+Public ERP_(72)
+Alias ERP_(1)=erp1
+Alias ERP_(2)=erp2
+Alias ERP_(3)=erp3
+Alias ERP_(4)=erp4
+Alias ERP_(5)=erp5
+Alias ERP_(6)=erp6
+Alias ERP_(7)=erp7
+Alias ERP_(8)=erp8
+Alias ERP_(9)=erp9
+Alias ERP_(10)=erp10
+Alias ERP_(11)=erp11
+Alias ERP_(12)=erp12
+Alias ERP_(13)=erp13
+Alias ERP_(14)=erp14
+Alias ERP_(15)=erp15
+Alias ERP_(16)=erp16
+Alias ERP_(17)=erp17
+Alias ERP_(18)=erp18
+Alias ERP_(19)=erp19
+Alias ERP_(20)=erp20
+Alias ERP_(21)=erp21
+Alias ERP_(22)=erp22
+Alias ERP_(23)=erp23
+Alias ERP_(24)=erp24
+Alias ERP_(25)=erp25
+Alias ERP_(26)=erp26
+Alias ERP_(27)=erp27
+Alias ERP_(28)=erp28
+Alias ERP_(29)=erp29
+Alias ERP_(30)=erp30
+Alias ERP_(31)=erp31
+Alias ERP_(32)=erp32
+Alias ERP_(33)=erp33
+Alias ERP_(34)=erp34
+Alias ERP_(35)=erp35
+Alias ERP_(36)=erp36
+Alias ERP_(37)=erp37
+Alias ERP_(38)=erp38
+Alias ERP_(39)=erp39
+Alias ERP_(40)=erp40
+Alias ERP_(41)=erp41
+Alias ERP_(42)=erp42
+Alias ERP_(43)=erp43
+Alias ERP_(44)=erp44
+Alias ERP_(45)=erp45
+Alias ERP_(46)=erp46
+Alias ERP_(47)=erp47
+Alias ERP_(48)=erp48 
+Alias ERP_(49)=erp49
+Alias ERP_(50)=erp50
+Alias ERP_(51)=erp51
+Alias ERP_(52)=erp52
+Alias ERP_(53)=erp53
+Alias ERP_(54)=erp54
+Alias ERP_(55)=erp55
+Alias ERP_(56)=erp56
+Alias ERP_(57)=erp57
+Alias ERP_(58)=erp58
+Alias ERP_(59)=erp59
+Alias ERP_(60)=erp60
+Alias ERP_(61)=erp61
+Alias ERP_(62)=erp62
+Alias ERP_(63)=erp63
+Alias ERP_(64)=erp64
+Alias ERP_(65)=erp65
+Alias ERP_(66)=erp66
+Alias ERP_(67)=erp67
+Alias ERP_(68)=erp68
+Alias ERP_(69)=erp69
+Alias ERP_(70)=erp70
+Alias ERP_(71)=erp71
+Alias ERP_(72)=erp72
+
+'Define Data Tables
+DataTable (Level301,1,-1)
+CardOut (0 ,-1)
+	Sample (1,DLBatt_V,FP2)
+	Sample (1,Temp301,FP2)
+	Sample (31,LaL_,FP2)
+	Sample (72,erp1,FP2)	
+EndTable
+
+'Define Subroutines
+'Sub
+	'EnterSub instructions here
+'EndSub
+
+'Main Program
+BeginProg
+  ' Activate Communication on COM4 port
+  ' this is to communicate with L3_2 logger 
+  ' NO LONGER USED. Communication is through RS232.
+  'SerialOpen (COM4,115200,0,0,50)
+
+	Scan (5,Min,3,0)
+		PanelTemp (Temp301,250)
+		Battery (DLBatt_V)
+
+'	TDR Measurements for 4 Level2 multiplexers
+	TDR100 (LaL_(1),0,0,1107,4,1.0,251,22,5,0.3,0.085,1.0,0)
+	TDR100 (LaL_(8),0,0,2106,4,1.0,251,22,5,0.3,0.085,1.0,0)
+	TDR100 (LaL_(13),0,0,2702,4,1.0,251,31,5,0.3,0.085,1.0,0)
+	TDR100 (LaL_(15),0,0,3108,4,1.0,251,39.25,2,0.075,0.035,1.0,0)
+	TDR100 (LaL_(23),0,0,4108,4,1.0,251,39.35,2,0.075,0.035,1.0,0)
+
+
+'	Measure Electectrical Resistance Probes (ERPs) connected to multiplexers
+'ERP Multiplexer 1
+			PortSet(4, 1)
+			i1=1
+			SubScan (0,uSec,8)
+				PulsePort(5,10000)
+				Delay(0,100,MSEC)
+				BrHalf(ERP_(i1), 3, mV2500, 1, VX1, 3, 2500, False, 10000, 250, 1, 0)
+				ERP_(i1) = 100*(ERP_(i1)/(1.0-ERP_(i1)))
+				ERP_(i1+1) = 100*(ERP_(i1+1)/(1.0-ERP_(i1+1)))
+				ERP_(i1+2) = 100*(ERP_(i1+2)/(1.0-ERP_(i1+2)))
+				i1=i1+3
+			NextSubScan
+			PortSet(4, 0)
+			
+			'ERP Multiplexer 2
+			PortSet(6, 1)
+			i1=25
+			SubScan (0,uSec,8)
+				PulsePort(5,10000)
+				Delay(0,100,MSEC)
+				BrHalf(ERP_(i1), 3, mV2500, 4, VX3, 3, 2500, False, 10000, 250, 1, 0)
+				ERP_(i1) = 100*(ERP_(i1)/(1.0-ERP_(i1)))
+				ERP_(i1+1) = 100*(ERP_(i1+1)/(1.0-ERP_(i1+1)))
+				ERP_(i1+2) = 100*(ERP_(i1+2)/(1.0-ERP_(i1+2)))
+				i1=i1+3
+			NextSubScan
+			PortSet(6, 0)
+			
+		'ERP Multiplexer 3
+			PortSet(6, 1)  ' NOTE: this is supposed to be port 7, but that is now used by com4.
+			i1=49
+			SubScan (0,uSec,8)
+				PulsePort(5,10000)
+				Delay(0,100,MSEC)
+				BrHalf(ERP_(i1), 3, mV2500, 9, VX2, 3, 2500, False, 10000, 250, 1, 0)
+				ERP_(i1) = 100*(ERP_(i1)/(1.0-ERP_(i1)))
+				ERP_(i1+1) = 100*(ERP_(i1+1)/(1.0-ERP_(i1+1)))
+				ERP_(i1+2) = 100*(ERP_(i1+2)/(1.0-ERP_(i1+2)))
+				i1=i1+3
+			NextSubScan
+			PortSet(6, 0)
+		CallTable Level301
+		' SapFlow call for downloading
+		Include "CPU:ServiceSAPLogger_ver2.CR1"
+	NextScan
+EndProg
+

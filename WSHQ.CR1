@@ -1,0 +1,133 @@
+'CR1000
+'
+'Program for Weather Station at the Angelo Reserve-Headquarters
+'Weather Station Name: Weather Station, Headquarters (WSHQ) or (HWS)
+'Sensors: 
+'  HMP45C (RH [%]& T [0C]), 
+'  CS106 (Barometric Pressure in mbars), 
+'  LI200X Pyranometer (Flux density [kW/m2]and Total [Flux MJ/m2]), 
+'  TE535 Raingauge (mm), 
+'  Yound wind monitor 05103-5 (Wind speed [m/s] and direction), 
+' 
+' Author: Collin Bode (assisted by Short Cut 2.5)
+' Date: January, 2010
+' 
+' replaces original code by
+' program author: Rohit Salve
+' date: September 17, 2008
+'
+' Modified Date: 03/12/2015
+' Chris Wong, UC Berkeley
+' Added TB4 raingauge (HWS_Rain_TB4)
+'
+' ------------------------------
+
+'Declare Public Variables
+Public HWS_Panel_T, 
+Public HWS_batt
+Public HWS_AirT, 
+Public HWS_AirRH
+Public HWS_BaroP
+Public HWS_SlrW    ' changed from HWS_SlrkW
+Public HWS_SlrkJ    ' changed from HWS_SlrMJ
+Public HWS_Rain
+Public HWS_Rain_TB4
+Public HWS_WSpeed
+Public HWS_WSpeed_max  ' new 
+Public HWS_WDirection
+Public Barometric_OffsetP
+
+Units HWS_Panel_T=Deg C
+Units HWS_batt=Volts
+Units HWS_AirT=Deg C
+Units HWS_AirRH=%
+Units HWS_BaroP=mbar
+Units HWS_SlrW=W/m²
+Units HWS_SlrkJ=kJ/m²
+Units HWS_Rain=mm
+Units HWS_Rain_TB4=mm
+Units HWS_WSpeed=meters/second
+Units HWS_WSpeed_max=meters/second
+Units HWS_WDirection=Degrees
+
+'Declare Constants
+' Barometric Constant
+' Most meadows in Angelow are at 400meters which should be 966 mbars
+' Cahto Peak at 1,249 should be around 871mbars
+' Barametric offset value is from the CS106 instrument manual. This is different from the CS105.
+' offset = 500 + 1013.25(1-(1-(Elevation_m/44307.69231))^5.25328) = 641.323 at 1,249 meters
+' Const Elevation_m=1249      ' elevation above sea level in meters. 
+' Const Barometric_Offset=500+1013.25*(1-(PWR((1-(Elevation_m/44307.69231)),5.25328)))
+Const Barometric_Offset=500 ' goal is to match actual elevation, not sea level
+
+'Define Data Tables= 
+DataTable(AR_HWS,True,-1)
+	DataInterval(0,5,Min,10)
+	Sample(1,HWS_Panel_T,FP2)
+	Sample(1,HWS_batt,FP2)
+	Average(1,HWS_AirT,FP2,False)
+	FieldNames("HWS_AirT")
+	Sample(1,HWS_AirRH,FP2)
+	Sample(1,HWS_BaroP,IEEE4)
+	Average(1,HWS_SlrW,IEEE4,False)
+	FieldNames("HWS_SlrW")
+	Totalize(1,HWS_SlrkJ,IEEE4,False)
+	FieldNames("HWS_SlrkJ")
+	Totalize(1,HWS_Rain,IEEE4,False)
+	Totalize(1,HWS_Rain_TB4,FP2,False)
+	Average(1,HWS_WSpeed,FP2,False)
+	FieldNames("HWS_WSpeed")
+	Maximum(1,HWS_WSpeed,FP2,False,False)
+	FieldNames("HWS_WSpeed_max")
+	Sample(1,HWS_WDirection,FP2)
+EndTable
+
+'Main Program
+BeginProg
+	Scan(30,Sec,1,0)
+	  '
+		'Default Datalogger Battery Voltage measurement Batt_Volt:
+		Battery(HWS_batt)
+		'
+		'Wiring Panel Temperature measurement PTemp_C:
+		PanelTemp(HWS_Panel_T,250)
+		'		
+ 		PortSet(9,1)
+ 		'
+		'HMP45C (6-wire) Temperature & Relative Humidity Sensor measurements AirTC and RH:
+		'Delay(0,150,mSec)  ' previous 1 sec
+		Delay (0,1,Sec)
+		VoltSe(HWS_AirT,1,mV2500,1,True,0,_60Hz,0.1,-40)  ' previous mV5000
+		VoltSe(HWS_AirRH,1,mV2500,2,True,0,_60Hz,0.1,0)  ' previous mV5000
+		If HWS_AirRH>100 AND HWS_AirRH<108 Then HWS_AirRH=100
+		'
+		'CS105 Barometric Pressure Sensor measurement BP_mbar:
+		' Diferences from previous code: see constants for Barometric_Offset(500).
+		VoltSe(HWS_BaroP,1,mV2500,3,false,200,250,0.240,Barometric_Offset)
+		'
+		PortSet (9,0)
+		'
+		'LI200X Pyranometer measurements HWS_SlrkJ and SlrW: previous did not totalize kJ.
+		VoltDiff(HWS_SlrW,1,mV7_5,3,True,0,_60Hz,1,0)  ' previous mV25
+		If HWS_SlrW<0 Then HWS_SlrW=0
+		HWS_SlrkJ=HWS_SlrW*12.0
+		HWS_SlrW=HWS_SlrW*200.0
+		'
+		'TE525 Rain Gauge measurement Rain_mm:
+		' multiplier: 0.254 (converts to millimeters), default 0.1. 
+		PulseCount(HWS_Rain,1,1,2,0,0.254,0)   
+		'
+		'TB4/TB4MM Rain Gauge measurement HWS_Rain_TB4
+		PulseCount(HWS_Rain_TB4,1,11,2,0,0.2,0)
+		'
+		'05103 Wind Speed & Direction Sensor measurements WS_ms and WindDir:
+		PulseCount(HWS_WSpeed,1,2,1,1,0.098,0)
+		BrHalf(HWS_WDirection,1,mV2500,4,1,1,2500,True,0,_60Hz,355,0)
+		If HWS_WDirection>=360 Then HWS_WDirection=0
+		' added correction because of periodic slightly negative values, wind gusts?
+		If HWS_WDirection<0 Then HWS_WDirection=360+HWS_WDirection  
+		'
+		'Call Data Tables and Store Data
+		CallTable(AR_HWS)
+	NextScan
+EndProg

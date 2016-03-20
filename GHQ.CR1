@@ -1,0 +1,228 @@
+'CR1000 Campbell Scientific datalogger
+
+'Program name: GHQv60 (version 6.0)
+'Gauge location: SF Eel River, Angelo Coast Range Reserve, Mendocino county, CA
+
+'\\\\\\\\\\\\\\\\\\\\\\\\\ DATA RECORD /////////////////////////
+
+'  Stage inside stilling well (stageMetersIn)
+'  Stage in open channel (stageMetersOut)
+'  Water temperature inside stilling well from T107 sensor (waterTempIn)
+'  Water temperature in channel from DTS-12 (waterTempOut)
+'  Air temperature inside radiation shield, T107 sensor (airTemperature)
+'  Turbidity from FTS DTS-12 on sampling boom in channel (turbidity)
+'  Enclosure relative humitiy (enclosureRH)
+'  Battery voltage (batteryVolts)
+
+'\\\\\\\\\\\\\\\\\\\\\\\\\ WIRING TABLE /////////////////////////
+
+'Inside Stage Measurement
+'Druck 1230-1830 pressure transducer, 10 psi
+'Wiring connections:
+'   signal+      yellow   DIFF H1
+'   signal-      blue     DIFF L1
+'   analog gnd   white    ground symbol
+'   excitation   red      VX1
+'   shield       bare     ground G
+'                orange   no connection, protect from shorting
+'                black    no connection, protect from shorting
+'Modifications to "stageOffsetIn" can be made from the Numeric window to match electronic stage to staff plate
+
+'Outside Stage Measurement
+'CS450 pressure transducer:
+'Wiring connections:
+'   Red   12V    Excitation
+'   Blk   G      Ground
+'   Wht   C3     Signal Port 3 SDI-12
+'   Blu   G      Ground
+'   Yel   G      Ground
+'   Clr   G      Ground
+'Modifications to "stageOffsetOut" can be made from the Numeric window to match electronic stage to staff plate
+
+'Water Temperature in Stilling Well
+'Therm107 sensor
+'Wiring connections:
+'   signal       red      SE3
+'   excitation   black    VX2   
+'   analog gnd   purple   ground symbol
+'   shield       clear    ground symbol
+
+'Water Temperature in Channel:
+'   Measured by the DTS-12 thermistor sensor prior to the turbidity measurement
+
+'Air Temperature
+'Therm107 sensor
+'Wiring connections:
+'   signal       red      SE4
+'   excitation   black    VX2   
+'   analog gnd   purple   ground symbol
+'   shield       clear    ground symbol
+
+'Turbidity Measurement
+'FTS DTS-12 turbidity sensor
+'   signal       white    C1
+'   excitation   red      12V
+'   ground       black    G
+
+'Enclosure Relative Humidity
+'CS210 RH sensor
+'   5VDC power   black:   5V 
+'   signal       white:   SE9
+'   ground       clear:   G 
+
+'\\\\\\\\\\\\\\\\\\\\\\\\\ REVISION HISTORY /////////////////////////
+
+'   Date: 10/06/2008
+'   Rand Eads, RiverMetrics LLC
+'   Original version
+
+'   Date: 10/7/2008
+'   Collin Bode, UC Berkeley
+'   Version v33
+'   Changed interval to 10minutes.renamed program
+'   Added battery voltage to main table.
+
+'   Date: 12/12/2008
+'   Collin Bode, UC Berkely
+'   Version v40
+'   Added relative humidity sensor, interval is now 5minutes
+
+'   Date: 3/29/2009
+'   Rand Eads, RiverMetrics LLC
+'   Version v50
+'   Changed voltage range on Druck sensors from 2500 vM to Autorange to improve resolution
+'   Changed Druck data recording precision from FP2 to IEEE4
+'   Changed and added variable names for stage measurements, RH, battery, and table name
+'   Changed scan interval to 15 min. 
+
+'  Date: 10/25/2009
+'  Collin Bode, UC Berkeley
+'  Version v51
+'  Changed stageOffsetIn from 0.10 feet to 0.132 feet to match stage reading 
+'    by Jasper & Bill on 10/25 at 11:45am of 1.06 feet. 
+
+'  Date: 11/15/2010
+'  Version v52
+'  Collin Bode, UC Berkeley
+'  Changed DataInterval on Table from 15minutes to 5 minutes
+
+'  Date: 12/02/2010
+'  Version v60
+'  Rand Eads, RiverMetrics
+'  Modify code for outside stage.  Replacing Druck pressure transducer with CS450 SDI-12
+
+'  Date: 02/04/2011
+'  Version v61
+'  Collin Bode, UC Berkeley
+'  Added water temperature value from CS450
+ 
+'\\\\\\\\\\\\\\\\\\\\\\\\\ DECLARATIONS /////////////////////////
+
+SequentialMode
+PreserveVariables
+
+Public airTemperature
+Public averageStageIn
+Public batteryVolts
+Public CS450(2)
+Alias CS450(1) = stagePSIOut
+Alias CS450(2) = waterTempOutcs450
+Public dtsArray(7)
+Public enclosureRH
+Public i
+Public k
+Public rawStageIn
+Public stageMultIn
+Public stageFeetIn
+Public stageFeetOut
+Public stageMetersOut
+Public stageMetersIn
+Public stageOffsetIn
+Public stageOffsetOut
+Public totalStageIn
+Public turbidity
+Public waterTempIn
+Public waterTempOut
+
+'\\\\\\\\\\\\\\\\\\\\\\\\ OUTPUT SECTION ////////////////////////
+
+DataTable(GHQTable,1,-1)
+   Sample(1,stageMetersIn,IEEE4)
+   Sample(1,stageMetersOut,FP2)
+   Sample(1,waterTempIn,FP2)
+   Sample(1,waterTempOut,FP2)
+   Sample(1,waterTempOutcs450,FP2)
+   Sample(1,airTemperature,FP2)
+   Sample(1,turbidity,FP2)
+   Sample(1,enclosureRH,FP2)
+   Sample(1,batteryVolts,FP2)
+EndTable
+
+'\\\\\\\\\\\\\\\\\\\\\\\\\ SUBROUTINES //////////////////////////
+
+Sub initialize
+   'Initialize stage variables, adjust Offsets as needed
+   stageMultIn = 2.3227567     '<========    Enter multiplier for inside pressure transducer
+   stageOffsetIn = 0.132       '<========    Enter offset (feet) for pressure transducer in well
+   stageOffsetOut = 0.0        '<========    Enter offset (feet) for pressure transducer in stream
+EndSub
+
+Sub readStageIn
+   'Get stage from Druck 1830 pressure transducer inside stilling well
+   totalStageIn = 0
+
+   For i = 1 To 150
+      BrFull(rawStageIn, 1, Autorange, 1, VX1, 1, 2500, True, True,0, 250, 1, 0)
+      totalStageIn = rawStageIn + totalStageIn
+   Next i
+
+   averageStageIn = totalStageIn / 150
+   stageFeetIn = averageStageIn * stageMultIn + stageOffsetIn 
+   stageMetersIn = stageFeetIn * 0.3048 
+EndSub
+
+Sub readStageOut
+   'Get stage from CS450 pressure transducer in channel
+   SDI12Recorder (CS450,3,"0","M!",1.0,0.0)
+   stageFeetOut = (stagePSIOut * 2.31) + stageOffsetOut
+   stageMetersOut = stageFeetOut * 0.3048 
+EndSub
+
+Sub readTemperature
+   'Measure water temperature inside stilling well
+   Therm107(waterTempIn, 1, 3, Vx2, 400, 250, 1, 0)
+   'Measure air temperature inside radiation shield at ~3 meter height above ground
+   Therm107(airTemperature, 1, 4, Vx2, 400, 250, 1, 0)
+EndSub
+
+Sub readTurbidity
+   SDI12Recorder(dtsArray, 1, "0", "M!", 1, 0)
+   waterTempOut = dtsArray(1)
+   SDI12Recorder(dtsArray, 1, "0", "M2!", 1, 0)
+   turbidity = dtsArray(3)
+EndSub
+
+Sub readEnclosureRH
+  'Measure CS210. Sensor is on all the time. Don't need a delay. 
+   VoltSe (enclosureRH,1,mV2500,9,1,0,250,0.1,0) 
+   'Set the sensor to 100% if it exceeds 100%. 
+   If enclosureRH > 100 Then enclosureRH = 100    
+EndSub
+
+'\\\\\\\\\\\\\\\\\\\\\\\\\\\ MAIN PROGRAM ////////////////////////////
+
+BeginProg
+      Call initialize
+   Scan(5,Min, 3, 0)
+      Call readStageIn
+      Call readStageOut
+      Call readTemperature
+      Call readTurbidity
+      Call readEnclosureRH
+      Battery (batteryVolts)
+      CallTable GHQTable
+   NextScan
+EndProg
+
+'\\\\\\\\\\\\\\\\\\\\\\\\\\\ END PROGRAM ////////////////////////////
+
