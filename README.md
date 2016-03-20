@@ -14,11 +14,11 @@ Level3_1.CR1		Rivendell Level 3, logger 1 (Level 3_1)
 Level3_2.CR1		Rivendell Level 3, logger 2 (Level 3_2)  
 Level4_1.CR1		Rivendell Level 4, logger 1 (Level 4_1)  
 Level5_1.CR1		Rivendell Level 5, logger 1 (Level 5_1)  
-SMSM.CR1		South (Blake's) Meadow Soil Moisture Station (SMSM). Set up by Rohit Salve in 2008 on a CR10X. Migrated to CR1000, 2016.  
+SMSM.CR1		South (Blake's) Meadow Soil Moisture Station (SMSM). Started 2008 on CR10X. Migrated to CR1000 in 2016.  
 UC_Angelo.CR1		South (Blake's) Meadow Weather Station (WSSM)  
 VMS.CR1			Rivendell Vadose Monitoring System (VMS)  
 WSAngeloMeadow.CR1	Angelo (Peter's) Meadw Weather Station (WSAM)  
 WSHQ.CR1		Angelo Headquarters Weather Station (WSHQ)  
-WSIC.CR1		Rivendell Ingrid (Douglas Fir Tree) Canopy station (WSIC). Used to uplink loggers to wireless network.  
+WSIC.CR1		Rivendell Ingrid (Douglas Fir Tree) Canopy station (WSIC). Uplink for loggers to wireless network.  
 WSSR.CR1		Sagehorn Ranch Weather Station (WSSR)  
 
