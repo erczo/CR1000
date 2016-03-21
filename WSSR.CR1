@@ -12,7 +12,6 @@
 '05103-L14 (Wind speed m/s and direction)
 'LWS-L10 (Leaf wetness sensor)
 'CS451 (Well pressure transducers)
-'HMP45AC (RH% and Temp °C)
 '
 'Author: Chris Wong, UC Berkeley (Short Cut 2.8)
 'Date: May 12, 2015
@@ -26,9 +25,10 @@
 'Author: Chris Wong, UC Berkeley
 'Date: February 18, 2016
 '
-'Added a used HMP45AC Temp/RH sensor to temporarily replace the current one.
-'Author: Chris Wong, UC Berkeley
-'Date: March 16, 2016
+' Modified: Collin Bode, ERCZO
+' Date: March 21, 2016
+' Corrected Rain gage value.  TB4 is inches not mm, so the multiplier
+' had to be changed from 0.2 to 0.254
 '
 '~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
 '
@@ -52,8 +52,6 @@ Public WSSR_LWMWet
 Public WSSR_CS450(2)
 Public WSSR_CS450_2(2)
 Public WSSR_CS450_3(2)
-Public WSSR_AirTC_2
-Public WSSR_RH_2
 
 Public WSSR_Lvl_m
 Public WSSR_Lvl_m_2
@@ -91,8 +89,6 @@ Units WSSR_Temp_C_2=deg C
 Units WSSR_Lvl_m_3=meters
 Units WSSR_Lvl_psi_3=psi
 Units WSSR_Temp_C_3=deg C
-Units WSSR_AirTC_2=Deg C
-Units WSSR_RH_2=%
 
 'Define Data Tables
 DataTable(Table1,True,-1)
@@ -149,10 +145,6 @@ DataTable(Table1,True,-1)
 	FieldNames("WSSR_Temp_C_3")
 	Sample (1,WSSR_Lvl_m_3,FP2)
 	FieldNames("WSSR_Lvl_m_3")
-	Sample(1,WSSR_AirTC_2,FP2)
-	FieldNames("WSSR_AirTC_2")
-	Sample(1,WSSR_RH_2,FP2)
-	FieldNames("WSSR_RH_2")
 EndTable
 
 'Main Program
@@ -176,8 +168,9 @@ BeginProg
 			PortSet(1,0)
 		EndIf
 		'
-		'TB4/TB4MM Rain Gauge measurement WSSR_Rain_mm
-		PulseCount(WSSR_Rain_mm,1,1,2,0,0.2,0)
+		'TB4/0.1 inches Rain Gauge measurement WSSR_Rain_mm
+		' British units gage, but converted to mm.  
+		PulseCount(WSSR_Rain_mm,1,1,2,0,0.254,0)
 		'
 		'LI200X Pyranometer measurements WSSR_SlrkJ and WSSR_SlrW
 		VoltDiff(WSSR_SlrW,1,mV7_5,3,True,0,_60Hz,1,0)
@@ -224,11 +217,6 @@ BeginProg
 		'CS450/CS455 Pressure Transducer measurements 'WSSR_Lvl_psi_3' and 'WSSR_Temp_C_3'
 		SDI12Recorder(WSSR_Lvl_psi_3,7,"2","M1!",1,0)
 		WSSR_Lvl_m_3=WSSR_Lvl_psi_3*0.70307
-		'
-		'HMP45C (6-wire, constant power) Temperature & Relative Humidity Sensor measurements 'WSSR_AirTC_2' and 'WSSR_RH_2'
-		VoltSE(WSSR_AirTC_2,1,mV2500,3,0,0,_60Hz,0.1,-40)
-		VoltSE(WSSR_RH_2,1,mV2500,4,0,0,_60Hz,0.1,0)
-		If WSSR_RH_2>100 And WSSR_RH_2<108 Then WSSR_RH_2=100
 		'
 		'Call Data Tables and Store Data
 		CallTable(Table1)
