@@ -30,6 +30,10 @@
 ' Corrected Rain gage value.  TB4 is inches not mm, so the multiplier
 ' had to be changed from 0.2 to 0.254
 '
+' Modified: Collin Bode, ERCZO
+' Date: July 13, 2016
+' Barometric pressure changed from fp2 to IEEE4.  fp2 does not have
+' sufficient resolution to reflect more than 4 digits of value.
 '~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
 '
 'Declare Variables and Units
@@ -101,7 +105,7 @@ DataTable(Table1,True,-1)
 	FieldNames("WSSR_AirTC_AVG")
 	Sample(1,WSSR_RH,FP2)
 	FieldNames("WSSR_RH")
-	Sample(1,WSSR_BP_mbar,FP2)
+	Sample(1,WSSR_BP_mbar,IEEE4)
 	FieldNames("WSSR_BP_mbar")
 	Totalize(1,WSSR_Rain_mm,FP2,False)
 	FieldNames("WSSR_Rain_mm_TOT")
