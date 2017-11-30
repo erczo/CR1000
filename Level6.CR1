@@ -1,22 +1,22 @@
 'CR1000
-'Created by Short Cut (2.8)
-
-'Level 6 - Rivendell South Slope Weather Station
-'Installed on 2017-05-24
-'Author: Chris Wong
+'Created by Short Cut (3.2)
+'Wendy Baxter - July 18,2017
+'Modified by Eren Bilir July 29, 2017 to add 16 more CS650s and 10 CS215s
 
 'CR1000 SerialNo. 84249
 'HMP60-L SerialNo. M3520338
-'LI190R-L SerialNo. Q103513
-'CS615(1) SerialNo. 20645 Installed at 10cm depth
-'CS615(2) SerialNo. 20647 Installed at 20cm depth
-'CS615(3) SerialNo. 20945 Installed at 30cm depth
+'LI190R-L SerialNo. Q103513, calibration constant: 7.16
+'LI190R-L multiplier is 0.231233
+'CS650(1) SerialNo. 20645 Installed at 10cm depth
+'CS650(2) SerialNo. 20647 Installed at 20cm depth
+'CS650(3) SerialNo. 20945 Installed at 30cm depth
 'TB4/0.2mm SerialNo. 16-1800
+'Barometric pressure offset for 500m elevation
 
 'Declare Variables and Units
 Public BattV
+Public PTemp_C
 Public BP_mmHg
-Public Rain_mm
 Public AirTC
 Public RH
 Public PAR_Den
@@ -25,86 +25,432 @@ Public LWmV
 Public LWMDry
 Public LWMCon
 Public LWMWet
-Public VW
-Public PA_mS
-Public VW_2
-Public PA_mS_2
-Public VW_3
-Public PA_mS_3
+Public CS65X_WS1(6)
+Public CS65X_WS2(6)
+Public CS65X_WS3(6)
+Public CS65X(3)
+Public CS65X_2(3)
+Public CS65X_3(3)
+Public CS65X_4(3)
+Public CS65X_5(3)
+Public CS65X_6(3)
+Public CS65X_7(3)
+Public CS65X_8(3)
+Public CS65X_9(3)
+Public CS65X_10(3)
+Public CS65X_11(3)
+Public CS65X_12(3)
+Public CS65X_13(3)
+Public CS65X_14(3)
+Public CS65X_15(3)
+Public CS65X_16(3)
+Public Rain_mm
+Public TRHData(2)
+Public TRHData_2(2)
+Public TRHData_3(2)
+Public TRHData_4(2)
+Public TRHData_5(2)
+Public TRHData_6(2)
+Public TRHData_7(2)
+Public TRHData_8(2)
+Public TRHData_9(2)
+Public TRHData_10(2)
+
+Alias AirTC=AirTC_WS
+Alias RH=RH_WS
+Alias CS65X_WS1(1)=VWC_WS1
+Alias CS65X_WS1(2)=EC_WS1
+Alias CS65X_WS1(3)=T_WS1
+Alias CS65X_WS1(4)=P_WS1
+Alias CS65X_WS1(5)=PA_WS1
+Alias CS65X_WS1(6)=VR_WS1
+Alias CS65X_WS2(1)=VWC_WS2
+Alias CS65X_WS2(2)=EC_WS2
+Alias CS65X_WS2(3)=T_WS2
+Alias CS65X_WS2(4)=P_WS2
+Alias CS65X_WS2(5)=PA_WS2
+Alias CS65X_WS2(6)=VR_WS2
+Alias CS65X_WS3(1)=VWC_WS3
+Alias CS65X_WS3(2)=EC_WS3
+Alias CS65X_WS3(3)=T_WS3
+Alias CS65X_WS3(4)=P_WS3
+Alias CS65X_WS3(5)=PA_WS3
+Alias CS65X_WS3(6)=VR_WS3
+Alias CS65X(1)=P
+Alias CS65X(2)=EC
+Alias CS65X(3)=T
+Alias CS65X_2(1)=P_2
+Alias CS65X_2(2)=EC_2
+Alias CS65X_2(3)=T_2
+Alias CS65X_3(1)=P_3
+Alias CS65X_3(2)=EC_3
+Alias CS65X_3(3)=T_3
+Alias CS65X_4(1)=P_4
+Alias CS65X_4(2)=EC_4
+Alias CS65X_4(3)=T_4
+Alias CS65X_5(1)=P_5
+Alias CS65X_5(2)=EC_5
+Alias CS65X_5(3)=T_5
+Alias CS65X_6(1)=P_6
+Alias CS65X_6(2)=EC_6
+Alias CS65X_6(3)=T_6
+Alias CS65X_7(1)=P_7
+Alias CS65X_7(2)=EC_7
+Alias CS65X_7(3)=T_7
+Alias CS65X_8(1)=P_8
+Alias CS65X_8(2)=EC_8
+Alias CS65X_8(3)=T_8
+Alias CS65X_9(1)=P_9
+Alias CS65X_9(2)=EC_9
+Alias CS65X_9(3)=T_9
+Alias CS65X_10(1)=P_10
+Alias CS65X_10(2)=EC_10
+Alias CS65X_10(3)=T_10
+Alias CS65X_11(1)=P_11
+Alias CS65X_11(2)=EC_11
+Alias CS65X_11(3)=T_11
+Alias CS65X_12(1)=P_12
+Alias CS65X_12(2)=EC_12
+Alias CS65X_12(3)=T_12
+Alias CS65X_13(1)=P_13
+Alias CS65X_13(2)=EC_13
+Alias CS65X_13(3)=T_13
+Alias CS65X_14(1)=P_14
+Alias CS65X_14(2)=EC_14
+Alias CS65X_14(3)=T_14
+Alias CS65X_15(1)=P_15
+Alias CS65X_15(2)=EC_15
+Alias CS65X_15(3)=T_15
+Alias CS65X_16(1)=P_16
+Alias CS65X_16(2)=EC_16
+Alias CS65X_16(3)=T_16
+Alias TRHData(1)=AirTC_1
+Alias TRHData(2)=RH_1
+Alias TRHData_2(1)=AirTC_2
+Alias TRHData_2(2)=RH_2
+Alias TRHData_3(1)=AirTC_3
+Alias TRHData_3(2)=RH_3
+Alias TRHData_4(1)=AirTC_4
+Alias TRHData_4(2)=RH_4
+Alias TRHData_5(1)=AirTC_5
+Alias TRHData_5(2)=RH_5
+Alias TRHData_6(1)=AirTC_6
+Alias TRHData_6(2)=RH_6
+Alias TRHData_7(1)=AirTC_7
+Alias TRHData_7(2)=RH_7
+Alias TRHData_8(1)=AirTC_8
+Alias TRHData_8(2)=RH_8
+Alias TRHData_9(1)=AirTC_9
+Alias TRHData_9(2)=RH_9
+Alias TRHData_10(1)=AirTC_10
+Alias TRHData_10(2)=RH_10
 
 Units BattV=Volts
+Units PTemp_C=Deg C
 Units BP_mmHg=mmHg
-Units Rain_mm=mm
-Units AirTC=Deg C
-Units RH=%
+Units AirTC_WS=Deg C
+Units RH_WS=%
 Units PAR_Den=umol/s/m^2
 Units PAR_Tot=mmol/m^2
 Units LWmV=mV
 Units LWMDry=Minutes
 Units LWMCon=Minutes
 Units LWMWet=Minutes
-Units PA_mS=mSec
-Units PA_mS_2=mSec
-Units PA_mS_3=mSec
+Units VWC_WS1=m^3/m^3
+Units EC_WS1=dS/m
+Units T_WS1=Deg C
+Units P_WS1=unitless
+Units PA_WS1=nSec
+Units VR_WS1=unitless
+Units VWC_WS2=m^3/m^3
+Units EC_WS2=dS/m
+Units T_WS2=Deg C
+Units P_WS2=unitless
+Units PA_WS2=nSec
+Units VR_WS2=unitless
+Units VWC_WS3=m^3/m^3
+Units EC_WS3=dS/m
+Units T_WS3=Deg C
+Units P_WS3=unitless
+Units PA_WS3=nSec
+Units VR_WS3=unitless
+Units P=unitless
+Units EC=dS/m
+Units T=Deg C
+Units P_2=unitless
+Units EC_2=dS/m
+Units T_2=Deg C
+Units P_3=unitless
+Units EC_3=dS/m
+Units T_3=Deg C
+Units P_4=unitless
+Units EC_4=dS/m
+Units T_4=Deg C
+Units P_5=unitless
+Units EC_5=dS/m
+Units T_5=Deg C
+Units P_6=unitless
+Units EC_6=dS/m
+Units T_6=Deg C
+Units P_7=unitless
+Units EC_7=dS/m
+Units T_7=Deg C
+Units P_8=unitless
+Units EC_8=dS/m
+Units T_8=Deg C
+Units P_9=unitless
+Units EC_9=dS/m
+Units T_9=Deg C
+Units P_10=unitless
+Units EC_10=dS/m
+Units T_10=Deg C
+Units P_11=unitless
+Units EC_11=dS/m
+Units T_11=Deg C
+Units P_12=unitless
+Units EC_12=dS/m
+Units T_12=Deg C
+Units P_13=unitless
+Units EC_13=dS/m
+Units T_13=Deg C
+Units P_14=unitless
+Units EC_14=dS/m
+Units T_14=Deg C
+Units P_15=unitless
+Units EC_15=dS/m
+Units T_15=Deg C
+Units P_16=unitless
+Units EC_16=dS/m
+Units T_16=Deg C
+Units AirTC_1=Deg C
+Units RH_1=%
+Units AirTC_2=Deg C
+Units RH_2=%
+Units AirTC_3=Deg C
+Units RH_3=%
+Units AirTC_4=Deg C
+Units RH_4=%
+Units AirTC_5=Deg C
+Units RH_5=%
+Units AirTC_6=Deg C
+Units RH_6=%
+Units AirTC_7=Deg C
+Units RH_7=%
+Units AirTC_8=Deg C
+Units RH_8=%
+Units AirTC_9=Deg C
+Units RH_9=%
+Units AirTC_10=Deg C
+Units RH_10=%
+Units Rain_mm=mm
 
 'Define Data Tables
-DataTable(Table1,True,-1)
-	DataInterval(0,60,Min,10)
+DataTable(CS650s,True,-1)
+  DataInterval(0,15,Min,10)
+  Minimum(1,BattV,FP2,False,False)
+  Average (1,EC,FP2,False)
+  Sample (1,EC,FP2)
+  Average (1,P,FP2,False)
+  Sample (1,P,FP2)
+  Average (1,T,FP2,False)
+  Sample (1,T,FP2)
+  Average (1,EC_2,FP2,False)
+  Sample (1,EC_2,FP2)
+  Average (1,P_2,FP2,False)
+  Sample (1,P_2,FP2)
+  Average (1,T_2,FP2,False)
+  Sample (1,T_2,FP2)
+  Average (1,EC_3,FP2,False)
+  Sample (1,EC_3,FP2)
+  Average (1,P_3,FP2,False)
+  Sample (1,P_3,FP2)
+  Average (1,T_3,FP2,False)
+  Sample (1,T_3,FP2)
+  Average (1,EC_4,FP2,False)
+  Sample (1,EC_4,FP2)
+  Average (1,P_4,FP2,False)
+  Sample (1,P_4,FP2)
+  Average (1,T_4,FP2,False)
+  Sample (1,T_4,FP2)
+  Average (1,EC_5,FP2,False)
+  Sample (1,EC_5,FP2)
+  Average (1,P_5,FP2,False)
+  Sample (1,P_5,FP2)
+  Average (1,T_5,FP2,False)
+  Sample (1,T_5,FP2)
+  Average (1,EC_6,FP2,False)
+  Sample (1,EC_6,FP2)
+  Average (1,P_6,FP2,False)
+  Sample (1,P_6,FP2)
+  Average (1,T_6,FP2,False)
+  Sample (1,T_6,FP2)
+  Average (1,EC_7,FP2,False)
+  Sample (1,EC_7,FP2)
+  Average (1,P_7,FP2,False)
+  Sample (1,P_7,FP2)
+  Average (1,T_7,FP2,False)
+  Sample (1,T_7,FP2)
+  Average (1,EC_8,FP2,False)
+  Sample (1,EC_8,FP2)
+  Average (1,P_8,FP2,False)
+  Sample (1,P_8,FP2)
+  Average (1,T_8,FP2,False)
+  Sample (1,T_8,FP2)
+  Average (1,EC_9,FP2,False)
+  Sample (1,EC_9,FP2)
+  Average (1,P_9,FP2,False)
+  Sample (1,P_9,FP2)
+  Average (1,T_9,FP2,False)
+  Sample (1,T_9,FP2)
+  Average (1,EC_10,FP2,False)
+  Sample (1,EC_10,FP2)
+  Average (1,P_10,FP2,False)
+  Sample (1,P_10,FP2)
+  Average (1,T_10,FP2,False)
+  Sample (1,T_10,FP2)
+  Average (1,EC_11,FP2,False)
+  Sample (1,EC_11,FP2)
+  Average (1,P_11,FP2,False)
+  Sample (1,P_11,FP2)
+  Average (1,T_11,FP2,False)
+  Sample (1,T_11,FP2)
+  Average (1,EC_12,FP2,False)
+  Sample (1,EC_12,FP2)
+  Average (1,P_12,FP2,False)
+  Sample (1,P_12,FP2)
+  Average (1,T_12,FP2,False)
+  Sample (1,T_12,FP2)
+  Average (1,EC_13,FP2,False)
+  Sample (1,EC_13,FP2)
+  Average (1,P_13,FP2,False)
+  Sample (1,P_13,FP2)
+  Average (1,T_13,FP2,False)
+  Sample (1,T_13,FP2)
+  Average (1,EC_14,FP2,False)
+  Sample (1,EC_14,FP2)
+  Average (1,P_14,FP2,False)
+  Sample (1,P_14,FP2)
+  Average (1,T_14,FP2,False)
+  Sample (1,T_14,FP2)
+  Average (1,EC_15,FP2,False)
+  Sample (1,EC_15,FP2)
+  Average (1,P_15,FP2,False)
+  Sample (1,P_15,FP2)
+  Average (1,T_15,FP2,False)
+  Sample (1,T_15,FP2)
+  Average (1,EC_16,FP2,False)
+  Sample (1,EC_16,FP2)
+  Average (1,P_16,FP2,False)
+  Sample (1,P_16,FP2)
+  Average (1,T_16,FP2,False)
+  Sample (1,T_16,FP2)
+EndTable
+
+DataTable(CS215s,True,-1)
+  DataInterval(0,1,Min,10)
+  Minimum(1,BattV,FP2,False,False)
+  Sample (1,AirTC_1,FP2)
+  Average (1,AirTC_1,FP2,False)
+  Sample (1,RH_1,FP2)
+  Average (1,RH_1,FP2,False)
+  Sample (1,AirTC_2,FP2)
+  Average (1,AirTC_2,FP2,False)
+  Sample (1,RH_2,FP2)
+  Average (1,RH_2,FP2,False)
+  Sample (1,AirTC_3,FP2)
+  Average (1,AirTC_3,FP2,False)
+  Sample (1,RH_3,FP2)
+  Average (1,RH_3,FP2,False)
+  Sample (1,AirTC_4,FP2)
+  Average (1,AirTC_4,FP2,False)
+  Sample (1,RH_4,FP2)
+  Average (1,RH_4,FP2,False)
+  Sample (1,AirTC_5,FP2)
+  Average (1,AirTC_5,FP2,False)
+  Sample (1,RH_5,FP2)
+  Average (1,RH_5,FP2,False)
+  Sample (1,AirTC_6,FP2)
+  Average (1,AirTC_6,FP2,False)
+  Sample (1,RH_6,FP2)
+  Average (1,RH_6,FP2,False)
+  Sample (1,AirTC_7,FP2)
+  Average (1,AirTC_7,FP2,False)
+  Sample (1,RH_7,FP2)
+  Average (1,RH_7,FP2,False)
+  Sample (1,AirTC_8,FP2)
+  Average (1,AirTC_8,FP2,False)
+  Sample (1,RH_8,FP2)
+  Average (1,RH_8,FP2,False)
+  Sample (1,AirTC_9,FP2)
+  Average (1,AirTC_9,FP2,False)
+  Sample (1,RH_9,FP2)
+  Average (1,RH_9,FP2,False)
+  Sample (1,AirTC_10,FP2)
+  Average (1,AirTC_10,FP2,False)
+  Sample (1,RH_10,FP2)
+  Average (1,RH_10,FP2,False)
+EndTable
+
+DataTable(WeatherStationSS,True,-1)
+	DataInterval(0,5,Min,10)
 	Sample(1,BattV,FP2)
-	'Delete this line and uncomment the following when insalling the barometric pressure
-	'Sample(1,BP_mmHg,FP2)
-	'Delete this line and uncomment the following when insalling the rain gauge
-	'Totalize(1,Rain_mm,FP2,False)
-	Average(1,AirTC,FP2,False)
-	Sample(1,RH,FP2)
-	Average(1,PAR_Den,FP2,False)
+	Average(1,PTemp_C,FP2,False)
+	Average(1,BP_mmHg,FP2,False)
+	Average(1,AirTC_WS,FP2,False)
+	Sample(1,RH_WS,FP2)
+	Average(1,PAR_Den,FP2,False))
 	Totalize(1,PAR_Tot,IEEE4,False)
 	Average(1,LWmV,FP2,False)
 	Totalize(1,LWMDry,FP2,False)
 	Totalize(1,LWMCon,FP2,False)
 	Totalize(1,LWMWet,FP2,False)
-	Average(1,VW,FP2,False)
-	Average(1,PA_mS,FP2,False)
-	Average(1,VW_2,FP2,False)
-	Average(1,PA_mS_2,FP2,False)
-	Average(1,VW_3,FP2,False)
-	Average(1,PA_mS_3,FP2,False)
+	Average(1,VWC_WS1,FP2,False)
+	Average(1,EC_WS1,FP2,False)
+	Average(1,T_WS1,FP2,False)
+	Average(1,P_WS1,FP2,False)
+	Average(1,PA_WS1,FP2,False)
+	Average(1,VR_WS1,FP2,False)
+	Average(1,VWC_WS2,FP2,False)
+	Average(1,EC_WS2,FP2,False)
+	Average(1,T_WS2,FP2,False)
+	Average(1,P_WS2,FP2,False)
+	Average(1,PA_WS2,FP2,False)
+	Average(1,VR_WS2,FP2,False)
+	Average(1,VWC_WS3,FP2,False)
+	Average(1,EC_WS3,FP2,False)
+	Average(1,T_WS3,FP2,False)
+	Average(1,P_WS3,FP2,False)
+	Average(1,PA_WS3,FP2,False)
+	Average(1,VR_WS3,FP2,False)
+	Totalize(1,Rain_mm,FP2,False
 EndTable
 
-DataTable(Table2,True,-1)
-	DataInterval(0,1440,Min,10)
-	Minimum(1,BattV,FP2,False,False)
-EndTable
+
 
 'Main Program
 BeginProg
-	Scan(5,Sec,1,0)
-		'Default Datalogger Battery Voltage measurement BattV
+	'Main Scan
+	Scan(30,Sec,1,0)
+		'Default CR1000 Datalogger Battery Voltage measurement 'BattV'
 		Battery(BattV)
-		'CS106 Barometric Pressure Sensor measurement BP_mmHg
-		'Delete this line and uncomment the following block when installing the barometric pressure
-	  'Wiring: 1H:blue (brown), ground:yellow (white), ground:clear, G:black, 12V:red, C1:green
-    'If IfTime(59,60,Min) Then PortSet(1,1)
-		'If IfTime(0,60,Min) Then
-			'VoltSE(BP_mmHg,1,mV2500,1,1,0,_60Hz,0.240,500)
-			'BP_mmHg=BP_mmHg*0.75006
-			'PortSet(1,0)
-		'EndIf
-		'TB4/TB4MM Rain Gauge measurement Rain_mm
-		'Delete this line and uncomment the following when insalling the rain gauge
-    'PulseCount(Rain_mm,1,1,2,0,0.2,0)
-		'HMP50 Temperature & Relative Humidity Sensor measurements AirTC and RH
-		VoltSE(AirTC,1,mV2500,2,0,0,_60Hz,0.1,-40)
-		VoltSE(RH,1,mV2500,3,0,0,_60Hz,0.1,0)
-		If (RH>100) AND (RH<108) Then RH=100
-		'LI190SB Quantum Sensor measurements PAR_Tot and PAR_Den
-		VoltDiff(PAR_Den,1,mv2_5,3,True,0,_60Hz,1,0)
+		'Default CR1000 Datalogger Wiring Panel Temperature measurement 'PTemp_C'
+		PanelTemp(PTemp_C,_60Hz)
+		'CS106 Barometric Pressure Sensor measurement 'BP_mmHg'
+		PortSet(1,1)
+		VoltSe(BP_mmHg,1,mV2500,1,1,0,_60Hz,0.240,558.6433)
+		BP_mmHg=BP_mmHg*0.75006
+		'HMP50/HMP60 Temperature & Relative Humidity Sensor measurements 'AirTC' and 'RH'
+		VoltSe(AirTC_WS,1,mV2500,2,0,0,_60Hz,0.1,-40)
+		VoltSe(RH_WS,1,mV2500,3,0,0,_60Hz,0.1,0)
+		If (RH_WS>100) AND (RH_WS<108) Then RH_WS=100
+		'LI190R Quantum Sensor measurements 'PAR_Tot' and 'PAR_Den
+		VoltDiff(PAR_Den,1,mv2_5,3,True,0,_60Hz,0.231233,0)
 		If PAR_Den<0 Then PAR_Den=0
 		PAR_Tot=PAR_Den*8.278146
 		PAR_Den=PAR_Den*1655.629
-		'LWS Dielectric Leaf Wetness Sensor measurement LWmV
+		'LWS Dielectric Leaf Wetness Sensor measurement 'LWmV'
 		BrHalf(LWmV,1,mV2500,4,1,1,2500,False,10000,_60Hz,2500,0)
-		'Determine Minutes Dry (LWMDry), Minutes Wet or Contaminated (LWMCon), and Minutes Wet (LWMWet) for this Scan
+		'Determine Minutes Dry 'LWMDry', Minutes Wet or Contaminated 'LWMCon', and Minutes Wet 'LWMWet' for this Scan
 		LWMDry=0
 		LWMCon=0
 		LWMWet=0
@@ -117,29 +463,72 @@ BeginProg
 				LWMCon=0.08333333
 			EndIf
 		EndIf
-		'CS615 Water Content Reflectometer measurements VW and PA_mS
-		If IfTime(0,1,Hr) Then
-			PortSet(2,1)
-			PeriodAvg(PA_mS,1,mV2500,7,0,0,10,50,0.001,0)
-			PortSet(2,0)
-			VW=-0.187+(0.037*PA_mS)+(0.335*PA_mS^2)
-		EndIf
-		'CS615 Water Content Reflectometer measurements VW_2 and PA_mS_2
-		If IfTime(0,1,Hr) Then
-			PortSet(3,1)
-			PeriodAvg(PA_mS_2,1,mV2500,8,0,0,10,50,0.001,0)
-			PortSet(3,0)
-			VW_2=-0.187+(0.037*PA_mS_2)+(0.335*PA_mS_2^2)
-		EndIf
-		'CS615 Water Content Reflectometer measurements VW_3 and PA_mS_3
-		If IfTime(0,1,Hr) Then
-			PortSet(4,1)
-			PeriodAvg(PA_mS_3,1,mV2500,9,0,0,10,50,0.001,0)
-			PortSet(4,0)
-			VW_3=-0.187+(0.037*PA_mS_3)+(0.335*PA_mS_3^2)
-		EndIf
+		'CS650/655 Water Content Reflectometer measurements 'VWC_WS1', 'EC_WS1', and 'T_WS1'
+		'10 cm depth
+		SDI12Recorder(CS65X_WS1(),3,"G","M3!",1,0,-1)
+		'CS650/655 Water Content Reflectometer measurements 'VWC_WS2', 'EC_WS2', and 'T_WS2'
+		'20 cm depth
+		SDI12Recorder(CS65X_WS2(),7,"H","M3!",1,0,-1)
+		'CS650/655 Water Content Reflectometer measurements 'VWC_WS3', 'EC_WS3', and 'T_WS3'
+		'30 cm depth
+		SDI12Recorder(CS65X_WS3(),7,"I","M3!",1,0,-1)
+		'CS650/655 Water Content Reflectometer measurements 'P', 'EC', and 'T'
+    SDI12Recorder(CS65X(),7,"0","M1!",1,0,-1)
+    'CS650/655 Water Content Reflectometer measurements 'P_2', 'EC_2', and 'T_2'
+    SDI12Recorder(CS65X_2(),7,"1","M1!",1,0,-1)
+    'CS650/655 Water Content Reflectometer measurements 'P_3', 'EC_3', and 'T_3'
+    SDI12Recorder(CS65X_3(),7,"2","M1!",1,0,-1)
+    'CS650/655 Water Content Reflectometer measurements 'P_4', 'EC_4', and 'T_4'
+    SDI12Recorder(CS65X_4(),7,"3","M1!",1,0,-1)
+    'CS650/655 Water Content Reflectometer measurements 'P_5', 'EC_5', and 'T_5'
+    SDI12Recorder(CS65X_5(),7,"4","M1!",1,0,-1)
+    'CS650/655 Water Content Reflectometer measurements 'P_6', 'EC_6', and 'T_6'
+    SDI12Recorder(CS65X_6(),7,"5","M1!",1,0,-1)
+    'CS650/655 Water Content Reflectometer measurements 'P_7', 'EC_7', and 'T_7'
+    SDI12Recorder(CS65X_7(),7,"6","M1!",1,0,-1)
+    'CS650/655 Water Content Reflectometer measurements 'P_8', 'EC_8', and 'T_8'
+    SDI12Recorder(CS65X_8(),7,"7","M1!",1,0,-1)
+    'CS650/655 Water Content Reflectometer measurements 'P_9', 'EC_9', and 'T_9'
+    SDI12Recorder(CS65X_9(),7,"8","M1!",1,0,-1)
+    'CS650/655 Water Content Reflectometer measurements 'P_10', 'EC_10', and 'T_10'
+    SDI12Recorder(CS65X_10(),7,"9","M1!",1,0,-1)
+    'CS650/655 Water Content Reflectometer measurements 'P_11', 'EC_11', and 'T_11'
+    SDI12Recorder(CS65X_11(),7,"A","M1!",1,0,-1)
+    'CS650/655 Water Content Reflectometer measurements 'P_12', 'EC_12', and 'T_12'
+    SDI12Recorder(CS65X_12(),7,"B","M1!",1,0,-1)
+    'CS650/655 Water Content Reflectometer measurements 'P_13', 'EC_13', and 'T_13'
+    SDI12Recorder(CS65X_13(),7,"C","M1!",1,0,-1)
+    'CS650/655 Water Content Reflectometer measurements 'P_14', 'EC_14', and 'T_14'
+    SDI12Recorder(CS65X_14(),7,"D","M1!",1,0,-1)
+    'CS650/655 Water Content Reflectometer measurements 'P_15', 'EC_15', and 'T_15'
+    SDI12Recorder(CS65X_15(),7,"E","M1!",1,0,-1)
+    'CS650/655 Water Content Reflectometer measurements 'P_16', 'EC_16', and 'T_16'
+    SDI12Recorder(CS65X_16(),7,"F","M1!",1,0,-1)
+    'CS215 Temperature & Relative Humidity Sensor measurements 'AirTC_1' and 'RH_1'
+    SDI12Recorder(TRHData(),5,"0","M!",1,0,-1)
+    'CS215 Temperature & Relative Humidity Sensor measurements 'AirTC_2' and 'RH_2'
+    SDI12Recorder(TRHData_2(),5,"1","M!",1,0,-1)
+    'CS215 Temperature & Relative Humidity Sensor measurements 'AirTC_3' and 'RH_3'
+    SDI12Recorder(TRHData_3(),5,"2","M!",1,0,-1)
+    'CS215 Temperature & Relative Humidity Sensor measurements 'AirTC_4' and 'RH_4'
+    SDI12Recorder(TRHData_4(),5,"3","M!",1,0,-1)
+    'CS215 Temperature & Relative Humidity Sensor measurements 'AirTC_5' and 'RH_5'
+    SDI12Recorder(TRHData_5(),5,"4","M!",1,0,-1)
+    'CS215 Temperature & Relative Humidity Sensor measurements 'AirTC_6' and 'RH_6'
+    SDI12Recorder(TRHData_6(),5,"5","M!",1,0,-1)
+    'CS215 Temperature & Relative Humidity Sensor measurements 'AirTC_7' and 'RH_7'
+    SDI12Recorder(TRHData_7(),5,"6","M!",1,0,-1)
+    'CS215 Temperature & Relative Humidity Sensor measurements 'AirTC_8' and 'RH_8'
+    SDI12Recorder(TRHData_8(),5,"7","M!",1,0,-1)
+    'CS215 Temperature & Relative Humidity Sensor measurements 'AirTC_9' and 'RH_9'
+    SDI12Recorder(TRHData_9(),5,"8","M!",1,0,-1)
+    'CS215 Temperature & Relative Humidity Sensor measurements 'AirTC_10' and 'RH_10'
+    SDI12Recorder(TRHData_10(),5,"9","M!",1,0,-1)
+		'TB4/TB4MM Rain Gauge measurement 'Rain_mm'
+		PulseCount(Rain_mm,1,1,2,0,0.254,0)
 		'Call Data Tables and Store Data
-		CallTable(Table1)
-		CallTable(Table2)
+		CallTable WeatherStationSS
+    CallTable CS650s
+    CallTable CS215s
 	NextScan
 EndProg
