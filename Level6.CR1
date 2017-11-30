@@ -1,0 +1,145 @@
+'CR1000
+'Created by Short Cut (2.8)
+
+'Level 6 - Rivendell South Slope Weather Station
+'Installed on 2017-05-24
+'Author: Chris Wong
+
+'CR1000 SerialNo. 84249
+'HMP60-L SerialNo. M3520338
+'LI190R-L SerialNo. Q103513
+'CS615(1) SerialNo. 20645 Installed at 10cm depth
+'CS615(2) SerialNo. 20647 Installed at 20cm depth
+'CS615(3) SerialNo. 20945 Installed at 30cm depth
+'TB4/0.2mm SerialNo. 16-1800
+
+'Declare Variables and Units
+Public BattV
+Public BP_mmHg
+Public Rain_mm
+Public AirTC
+Public RH
+Public PAR_Den
+Public PAR_Tot
+Public LWmV
+Public LWMDry
+Public LWMCon
+Public LWMWet
+Public VW
+Public PA_mS
+Public VW_2
+Public PA_mS_2
+Public VW_3
+Public PA_mS_3
+
+Units BattV=Volts
+Units BP_mmHg=mmHg
+Units Rain_mm=mm
+Units AirTC=Deg C
+Units RH=%
+Units PAR_Den=umol/s/m^2
+Units PAR_Tot=mmol/m^2
+Units LWmV=mV
+Units LWMDry=Minutes
+Units LWMCon=Minutes
+Units LWMWet=Minutes
+Units PA_mS=mSec
+Units PA_mS_2=mSec
+Units PA_mS_3=mSec
+
+'Define Data Tables
+DataTable(Table1,True,-1)
+	DataInterval(0,60,Min,10)
+	Sample(1,BattV,FP2)
+	'Delete this line and uncomment the following when insalling the barometric pressure
+	'Sample(1,BP_mmHg,FP2)
+	'Delete this line and uncomment the following when insalling the rain gauge
+	'Totalize(1,Rain_mm,FP2,False)
+	Average(1,AirTC,FP2,False)
+	Sample(1,RH,FP2)
+	Average(1,PAR_Den,FP2,False)
+	Totalize(1,PAR_Tot,IEEE4,False)
+	Average(1,LWmV,FP2,False)
+	Totalize(1,LWMDry,FP2,False)
+	Totalize(1,LWMCon,FP2,False)
+	Totalize(1,LWMWet,FP2,False)
+	Average(1,VW,FP2,False)
+	Average(1,PA_mS,FP2,False)
+	Average(1,VW_2,FP2,False)
+	Average(1,PA_mS_2,FP2,False)
+	Average(1,VW_3,FP2,False)
+	Average(1,PA_mS_3,FP2,False)
+EndTable
+
+DataTable(Table2,True,-1)
+	DataInterval(0,1440,Min,10)
+	Minimum(1,BattV,FP2,False,False)
+EndTable
+
+'Main Program
+BeginProg
+	Scan(5,Sec,1,0)
+		'Default Datalogger Battery Voltage measurement BattV
+		Battery(BattV)
+		'CS106 Barometric Pressure Sensor measurement BP_mmHg
+		'Delete this line and uncomment the following block when installing the barometric pressure
+	  'Wiring: 1H:blue (brown), ground:yellow (white), ground:clear, G:black, 12V:red, C1:green
+    'If IfTime(59,60,Min) Then PortSet(1,1)
+		'If IfTime(0,60,Min) Then
+			'VoltSE(BP_mmHg,1,mV2500,1,1,0,_60Hz,0.240,500)
+			'BP_mmHg=BP_mmHg*0.75006
+			'PortSet(1,0)
+		'EndIf
+		'TB4/TB4MM Rain Gauge measurement Rain_mm
+		'Delete this line and uncomment the following when insalling the rain gauge
+    'PulseCount(Rain_mm,1,1,2,0,0.2,0)
+		'HMP50 Temperature & Relative Humidity Sensor measurements AirTC and RH
+		VoltSE(AirTC,1,mV2500,2,0,0,_60Hz,0.1,-40)
+		VoltSE(RH,1,mV2500,3,0,0,_60Hz,0.1,0)
+		If (RH>100) AND (RH<108) Then RH=100
+		'LI190SB Quantum Sensor measurements PAR_Tot and PAR_Den
+		VoltDiff(PAR_Den,1,mv2_5,3,True,0,_60Hz,1,0)
+		If PAR_Den<0 Then PAR_Den=0
+		PAR_Tot=PAR_Den*8.278146
+		PAR_Den=PAR_Den*1655.629
+		'LWS Dielectric Leaf Wetness Sensor measurement LWmV
+		BrHalf(LWmV,1,mV2500,4,1,1,2500,False,10000,_60Hz,2500,0)
+		'Determine Minutes Dry (LWMDry), Minutes Wet or Contaminated (LWMCon), and Minutes Wet (LWMWet) for this Scan
+		LWMDry=0
+		LWMCon=0
+		LWMWet=0
+		If LWmV<274 Then
+			LWMDry=0.08333333
+		Else
+			If LWmV>=284 Then
+				LWMWet=0.08333333
+			Else
+				LWMCon=0.08333333
+			EndIf
+		EndIf
+		'CS615 Water Content Reflectometer measurements VW and PA_mS
+		If IfTime(0,1,Hr) Then
+			PortSet(2,1)
+			PeriodAvg(PA_mS,1,mV2500,7,0,0,10,50,0.001,0)
+			PortSet(2,0)
+			VW=-0.187+(0.037*PA_mS)+(0.335*PA_mS^2)
+		EndIf
+		'CS615 Water Content Reflectometer measurements VW_2 and PA_mS_2
+		If IfTime(0,1,Hr) Then
+			PortSet(3,1)
+			PeriodAvg(PA_mS_2,1,mV2500,8,0,0,10,50,0.001,0)
+			PortSet(3,0)
+			VW_2=-0.187+(0.037*PA_mS_2)+(0.335*PA_mS_2^2)
+		EndIf
+		'CS615 Water Content Reflectometer measurements VW_3 and PA_mS_3
+		If IfTime(0,1,Hr) Then
+			PortSet(4,1)
+			PeriodAvg(PA_mS_3,1,mV2500,9,0,0,10,50,0.001,0)
+			PortSet(4,0)
+			VW_3=-0.187+(0.037*PA_mS_3)+(0.335*PA_mS_3^2)
+		EndIf
+		'Call Data Tables and Store Data
+		CallTable(Table1)
+		CallTable(Table2)
+	NextScan
+EndProg
