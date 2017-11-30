@@ -2,7 +2,16 @@
 'Created by Short Cut (3.2)
 'Wendy Baxter - July 18,2017
 'Modified by Eren Bilir July 29, 2017 to add 16 more CS650s and 10 CS215s
+'Modified by Collin Bode Sep. 27, 2017 to slow scan from 5 sec to 30 sec.
+' This allows enough time for the multiplexors to finish.  
+'Modified by Collin Bode Nov 30, 2017 to 
+' a. Barometric pressure from mmHg to millibars
+' b. Barometric pressure remove the 500m offset. 
+' c. Removed minimum battery voltage from CS650 and CS215 tables
+' d. Removed averaged values from CS215 table, since they were only 
+'    averaging 2 values.
 
+'Instruments and Serial Numbers
 'CR1000 SerialNo. 84249
 'HMP60-L SerialNo. M3520338
 'LI190R-L SerialNo. Q103513, calibration constant: 7.16
@@ -11,12 +20,12 @@
 'CS650(2) SerialNo. 20647 Installed at 20cm depth
 'CS650(3) SerialNo. 20945 Installed at 30cm depth
 'TB4/0.2mm SerialNo. 16-1800
-'Barometric pressure offset for 500m elevation
 
 'Declare Variables and Units
 Public BattV
 Public PTemp_C
-Public BP_mmHg
+'Public BP_mmHg
+Public BP_mbar
 Public AirTC
 Public RH
 Public PAR_Den
@@ -147,7 +156,8 @@ Alias TRHData_10(2)=RH_10
 
 Units BattV=Volts
 Units PTemp_C=Deg C
-Units BP_mmHg=mmHg
+'Units BP_mmHg=mmHg
+Units BP_mbar=mbar
 Units AirTC_WS=Deg C
 Units RH_WS=%
 Units PAR_Den=umol/s/m^2
@@ -247,7 +257,7 @@ Units Rain_mm=mm
 'Define Data Tables
 DataTable(CS650s,True,-1)
   DataInterval(0,15,Min,10)
-  Minimum(1,BattV,FP2,False,False)
+  'Minimum(1,BattV,FP2,False,False)
   Average (1,EC,FP2,False)
   Sample (1,EC,FP2)
   Average (1,P,FP2,False)
@@ -348,54 +358,55 @@ EndTable
 
 DataTable(CS215s,True,-1)
   DataInterval(0,1,Min,10)
-  Minimum(1,BattV,FP2,False,False)
+  'Minimum(1,BattV,FP2,False,False)
   Sample (1,AirTC_1,FP2)
-  Average (1,AirTC_1,FP2,False)
+  'Average (1,AirTC_1,FP2,False)
   Sample (1,RH_1,FP2)
-  Average (1,RH_1,FP2,False)
+  'Average (1,RH_1,FP2,False)
   Sample (1,AirTC_2,FP2)
-  Average (1,AirTC_2,FP2,False)
+  'Average (1,AirTC_2,FP2,False)
   Sample (1,RH_2,FP2)
-  Average (1,RH_2,FP2,False)
+  'Average (1,RH_2,FP2,False)
   Sample (1,AirTC_3,FP2)
-  Average (1,AirTC_3,FP2,False)
+  'Average (1,AirTC_3,FP2,False)
   Sample (1,RH_3,FP2)
-  Average (1,RH_3,FP2,False)
+  'Average (1,RH_3,FP2,False)
   Sample (1,AirTC_4,FP2)
-  Average (1,AirTC_4,FP2,False)
+  'Average (1,AirTC_4,FP2,False)
   Sample (1,RH_4,FP2)
-  Average (1,RH_4,FP2,False)
+  'Average (1,RH_4,FP2,False)
   Sample (1,AirTC_5,FP2)
-  Average (1,AirTC_5,FP2,False)
+  'Average (1,AirTC_5,FP2,False)
   Sample (1,RH_5,FP2)
-  Average (1,RH_5,FP2,False)
+  'Average (1,RH_5,FP2,False)
   Sample (1,AirTC_6,FP2)
-  Average (1,AirTC_6,FP2,False)
+  'Average (1,AirTC_6,FP2,False)
   Sample (1,RH_6,FP2)
-  Average (1,RH_6,FP2,False)
+  'Average (1,RH_6,FP2,False)
   Sample (1,AirTC_7,FP2)
-  Average (1,AirTC_7,FP2,False)
+  'Average (1,AirTC_7,FP2,False)
   Sample (1,RH_7,FP2)
-  Average (1,RH_7,FP2,False)
+  'Average (1,RH_7,FP2,False)
   Sample (1,AirTC_8,FP2)
-  Average (1,AirTC_8,FP2,False)
+  'Average (1,AirTC_8,FP2,False)
   Sample (1,RH_8,FP2)
-  Average (1,RH_8,FP2,False)
+  'Average (1,RH_8,FP2,False)
   Sample (1,AirTC_9,FP2)
-  Average (1,AirTC_9,FP2,False)
+  'Average (1,AirTC_9,FP2,False)
   Sample (1,RH_9,FP2)
-  Average (1,RH_9,FP2,False)
+  'Average (1,RH_9,FP2,False)
   Sample (1,AirTC_10,FP2)
-  Average (1,AirTC_10,FP2,False)
+  'Average (1,AirTC_10,FP2,False)
   Sample (1,RH_10,FP2)
-  Average (1,RH_10,FP2,False)
+  'Average (1,RH_10,FP2,False)
 EndTable
 
 DataTable(WeatherStationSS,True,-1)
 	DataInterval(0,5,Min,10)
 	Sample(1,BattV,FP2)
 	Average(1,PTemp_C,FP2,False)
-	Average(1,BP_mmHg,FP2,False)
+	'Average(1,BP_mmHg,FP2,False)
+	Sample(1,BP_mbar,FP2)
 	Average(1,AirTC_WS,FP2,False)
 	Sample(1,RH_WS,FP2)
 	Average(1,PAR_Den,FP2,False))
@@ -437,8 +448,9 @@ BeginProg
 		PanelTemp(PTemp_C,_60Hz)
 		'CS106 Barometric Pressure Sensor measurement 'BP_mmHg'
 		PortSet(1,1)
-		VoltSe(BP_mmHg,1,mV2500,1,1,0,_60Hz,0.240,558.6433)
-		BP_mmHg=BP_mmHg*0.75006
+		VoltSe(BP_mbar,1,mV2500,1,1,0,_60Hz,0.240,500)
+    'VoltSe(BP_mmHg,1,mV2500,1,1,0,_60Hz,0.240,558.6433)
+		'BP_mmHg=BP_mmHg*0.75006
 		'HMP50/HMP60 Temperature & Relative Humidity Sensor measurements 'AirTC' and 'RH'
 		VoltSe(AirTC_WS,1,mV2500,2,0,0,_60Hz,0.1,-40)
 		VoltSe(RH_WS,1,mV2500,3,0,0,_60Hz,0.1,0)
